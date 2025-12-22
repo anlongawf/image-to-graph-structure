@@ -143,19 +143,19 @@ class UniversalGraphRecognizer:
     # ==========================================
 
     def ocr_node_labels(self):
-        """OCR đọc nhãn trong nodes"""
+        """OCR đọc nhãn trong nodes - Cải thiện độ chính xác"""
         print("OCR nhãn nodes...")
 
         for i, node in enumerate(self.nodes):
             cx, cy = node['center']
             r = node['radius']
 
-            # Crop ROI
-            padding = int(r * 0.1)
-            y1 = max(0, cy - r - padding)
-            y2 = min(self.img.shape[0], cy + r + padding)
-            x1 = max(0, cx - r - padding)
-            x2 = min(self.img.shape[1], cx + r + padding)
+            # Crop ROI - crop chặt hơn vào center
+            padding = int(r * 0.3)  # Giảm padding để crop chặt hơn
+            y1 = max(0, cy - r + padding)
+            y2 = min(self.img.shape[0], cy + r - padding)
+            x1 = max(0, cx - r + padding)
+            x2 = min(self.img.shape[1], cx + r - padding)
 
             roi = self.img[y1:y2, x1:x2]
 
@@ -163,36 +163,108 @@ class UniversalGraphRecognizer:
                 node['label'] = f'N{i}'
                 continue
 
-            # Enhance ROI
+            # Enhance ROI với nhiều phương pháp
             roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-
-            # Thử cả 2 cách threshold
+            
+            # Denoise
+            roi_gray = cv2.fastNlMeansDenoising(roi_gray, None, 10, 7, 21)
+            
+            # Contrast enhancement
+            roi_gray = cv2.convertScaleAbs(roi_gray, alpha=1.5, beta=10)
+            
+            # Tạo nhiều biến thể để thử
+            roi_variants = []
+            
+            # 1. OTSU threshold (BINARY)
             _, th1 = cv2.threshold(roi_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            roi_variants.append(th1)
+            
+            # 2. OTSU threshold (BINARY_INV)
             _, th2 = cv2.threshold(roi_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            roi_variants.append(th2)
+            
+            # 3. Adaptive threshold
+            th3 = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                       cv2.THRESH_BINARY, 11, 2)
+            roi_variants.append(th3)
+            
+            # 4. Adaptive threshold (INV)
+            th4 = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                       cv2.THRESH_BINARY_INV, 11, 2)
+            roi_variants.append(th4)
+            
+            # 5. Morphology để làm rõ text
+            kernel = np.ones((2,2), np.uint8)
+            th5 = cv2.morphologyEx(th1, cv2.MORPH_CLOSE, kernel)
+            roi_variants.append(th5)
+            
+            # Resize để tăng độ phân giải
+            scale = 4  # Tăng scale lên 4
+            roi_variants = [cv2.resize(roi, None, fx=scale, fy=scale, 
+                                      interpolation=cv2.INTER_CUBIC) for roi in roi_variants]
 
-            # Resize
-            scale = 3
-            th1 = cv2.resize(th1, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
-            th2 = cv2.resize(th2, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
-
-            # OCR với whitelist rộng
-            config = "--psm 10 --oem 3 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789∞"
-
+            # Thử nhiều PSM modes
+            psm_modes = [
+                ("--psm 10", "single character"),  # Single character
+                ("--psm 8", "single word"),         # Single word
+                ("--psm 7", "single line"),         # Single line
+                ("--psm 13", "raw line"),           # Raw line
+            ]
+            
+            whitelist = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789∞"
+            
             label = None
-            for th in [th1, th2]:
-                try:
-                    text = pytesseract.image_to_string(th, config=config).strip()
-                    text = text.replace(' ', '').replace('\n', '')
+            best_confidence = 0
+            
+            for roi_variant in roi_variants:
+                for psm_config, _ in psm_modes:
+                    config = f"{psm_config} --oem 3 -c tessedit_char_whitelist={whitelist}"
+                    try:
+                        # Thử với getData để lấy confidence
+                        data = pytesseract.image_to_data(roi_variant, config=config, output_type=pytesseract.Output.DICT)
+                        
+                        # Lấy text và confidence
+                        texts = [t.strip() for t in data['text'] if t.strip()]
+                        confidences = [c for c, t in zip(data['conf'], data['text']) if t.strip()]
+                        
+                        if texts and confidences:
+                            # Lấy text có confidence cao nhất
+                            max_conf_idx = confidences.index(max(confidences))
+                            text = texts[max_conf_idx]
+                            confidence = confidences[max_conf_idx]
+                            
+                            # Clean text
+                            text = text.replace(' ', '').replace('\n', '').replace('\t', '')
+                            
+                            # Post-processing: Sửa các lỗi phổ biến
+                            text = self._correct_ocr_errors(text)
+                            
+                            # Chỉ chấp nhận nếu confidence > 30 và text hợp lệ
+                            if text and len(text) <= 2 and confidence > best_confidence and confidence > 30:
+                                label = text
+                                best_confidence = confidence
+                                if confidence > 70:  # Nếu confidence rất cao, dừng ngay
+                                    break
+                    except Exception as e:
+                        continue
+                
+                if label and best_confidence > 70:
+                    break
 
-                    # Xử lý ký tự đặc biệt
-                    if text in ['8', 'oo', '00', 'OO']:
-                        text = '∞'
-
-                    if text and len(text) <= 3:
-                        label = text
-                        break
-                except:
-                    pass
+            # Nếu vẫn không có label, thử lại với phương pháp đơn giản hơn
+            if not label:
+                for roi_variant in roi_variants[:2]:  # Chỉ thử 2 phương pháp đầu
+                    try:
+                        config = f"--psm 10 --oem 3 -c tessedit_char_whitelist={whitelist}"
+                        text = pytesseract.image_to_string(roi_variant, config=config).strip()
+                        text = text.replace(' ', '').replace('\n', '')
+                        text = self._correct_ocr_errors(text)
+                        
+                        if text and len(text) <= 2:
+                            label = text
+                            break
+                    except:
+                        pass
 
             node['label'] = label if label else f'N{i}'
 
@@ -202,6 +274,51 @@ class UniversalGraphRecognizer:
                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
 
         print(f"   Labels: {[n['label'] for n in self.nodes]}")
+    
+    def _correct_ocr_errors(self, text):
+        """Sửa các lỗi OCR phổ biến"""
+        if not text:
+            return text
+        
+        text = text.upper().strip()
+        
+        # Mapping các lỗi phổ biến
+        corrections = {
+            'BY': 'B',
+            'BY ': 'B',
+            'BY\n': 'B',
+            'rA': 'A',
+            'rA ': 'A',
+            'rA\n': 'A',
+            'CA': 'C',  # Có thể là C hoặc CA, ưu tiên C
+            'CA ': 'C',
+            'CA\n': 'C',
+            '8': '∞',
+            'OO': '∞',
+            '00': '∞',
+            '0': 'O',  # Có thể nhầm O thành 0
+            '1': 'I',  # Có thể nhầm I thành 1
+            '5': 'S',  # Có thể nhầm S thành 5
+        }
+        
+        # Áp dụng corrections
+        if text in corrections:
+            return corrections[text]
+        
+        # Nếu text có 2 ký tự và bắt đầu bằng ký tự đúng, lấy ký tự đầu
+        if len(text) == 2:
+            # Nếu ký tự đầu là chữ cái hợp lệ và ký tự thứ 2 là lỗi
+            if text[0] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' and text[1] not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789':
+                return text[0]
+            # Nếu ký tự thứ 2 là chữ cái hợp lệ và ký tự đầu là lỗi
+            if text[1] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' and text[0] not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789':
+                return text[1]
+        
+        # Chỉ lấy ký tự đầu nếu là chữ cái hợp lệ
+        if len(text) > 1 and text[0] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
+            return text[0]
+        
+        return text
 
     # ==========================================
     # BƯỚC 3: PHÁT HIỆN TRỌNG SỐ
