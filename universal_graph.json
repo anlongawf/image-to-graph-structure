@@ -2,113 +2,121 @@
   "nodes": [
     {
       "id": 0,
-      "label": "I"
+      "label": "D"
     },
     {
       "id": 1,
-      "label": "S"
+      "label": "F"
     },
     {
       "id": 2,
-      "label": "6"
+      "label": "C"
     },
     {
       "id": 3,
-      "label": "4"
+      "label": "G"
     },
     {
       "id": 4,
-      "label": "3"
+      "label": "E"
     },
     {
       "id": 5,
-      "label": "2"
+      "label": "A"
+    },
+    {
+      "id": 6,
+      "label": "B"
+    },
+    {
+      "id": 7,
+      "label": "H"
     }
   ],
   "edges": [
     {
-      "from": "4",
-      "to": "2",
+      "from": "A",
+      "to": "B",
       "weight": null
     },
     {
-      "from": "4",
-      "to": "2",
+      "from": "A",
+      "to": "G",
       "weight": null
     },
     {
-      "from": "S",
-      "to": "2",
+      "from": "E",
+      "to": "A",
       "weight": null
     },
     {
-      "from": "6",
-      "to": "3",
+      "from": "A",
+      "to": "B",
       "weight": null
     },
     {
-      "from": "I",
-      "to": "3",
+      "from": "E",
+      "to": "A",
       "weight": null
     },
     {
-      "from": "6",
-      "to": "3",
+      "from": "C",
+      "to": "B",
       "weight": null
     },
     {
-      "from": "S",
-      "to": "2",
+      "from": "A",
+      "to": "G",
       "weight": null
     },
     {
-      "from": "4",
-      "to": "2",
+      "from": "D",
+      "to": "G",
       "weight": null
     },
     {
-      "from": "2",
-      "to": "I",
+      "from": "A",
+      "to": "F",
       "weight": null
     },
     {
-      "from": "2",
-      "to": "I",
+      "from": "D",
+      "to": "G",
       "weight": null
     },
     {
-      "from": "I",
-      "to": "3",
+      "from": "C",
+      "to": "B",
       "weight": null
     },
     {
-      "from": "S",
-      "to": "S",
+      "from": "G",
+      "to": "H",
       "weight": null
     },
     {
-      "from": "2",
-      "to": "I",
+      "from": "G",
+      "to": "H",
       "weight": null
     },
     {
-      "from": "I",
-      "to": "3",
+      "from": "A",
+      "to": "F",
       "weight": null
     },
     {
-      "from": "2",
-      "to": "2",
+      "from": "G",
+      "to": "C",
       "weight": null
     },
     {
-      "from": "3",
-      "to": "3",
+      "from": "G",
+      "to": "C",
       "weight": null
     },
     {
-      "from": "2",
-      "to": "2",
+      "from": "F",
+      "to": "D",
       "weight": null
     }
   ]

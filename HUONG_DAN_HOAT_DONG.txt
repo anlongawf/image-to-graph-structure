@@ -1,0 +1,162 @@
+# HƯỚNG DẪN HOẠT ĐỘNG - UNIVERSAL GRAPH RECOGNIZER
+
+## TỔNG QUAN
+Script này nhận diện cấu trúc đồ thị từ ảnh bằng cách phát hiện nodes (đỉnh), edges (cạnh), và weights (trọng số).
+
+## CÁC BƯỚC HOẠT ĐỘNG
+
+### BƯỚC 1: PHÁT HIỆN NODES (Đỉnh)
+Script sử dụng 3 phương pháp song song để tìm nodes:
+
+**Method 1: Color Detection (Phát hiện màu)**
+- Quét ảnh tìm các vùng có màu sắc đặc trưng (đỏ, cam, vàng, xanh lá, xanh dương, tím)
+- Sử dụng HSV color space để phát hiện chính xác hơn
+- Tìm contour của các vùng màu và tính tâm + bán kính
+
+**Method 2: Threshold + Contour Detection**
+- Áp dụng Gaussian Blur để giảm nhiễu
+- Thử cả BINARY và BINARY_INV threshold
+- Tìm contour có diện tích phù hợp (400 - 6000 pixels)
+- Kiểm tra aspect ratio (0.6 - 1.5) để lọc hình tròn/vuông
+
+**Method 3: Hough Circle Detection**
+- Sử dụng thuật toán Hough Transform để phát hiện hình tròn
+- Tham số: dp=1, minDist=30, param1=100, param2=30
+- Bán kính: 15-60 pixels
+
+**Loại bỏ trùng lặp:**
+- Gộp các nodes có khoảng cách tâm < 30 pixels
+- Chỉ giữ lại 1 node đại diện
+
+### BƯỚC 2: OCR NHÃN NODES
+Đọc text bên trong mỗi node để xác định nhãn:
+
+**Tiền xử lý ROI:**
+1. Crop vùng node với padding = 30% bán kính
+2. Denoise bằng fastNlMeansDenoising
+3. Tăng contrast (alpha=1.5, beta=10)
+
+**Tạo nhiều biến thể threshold:**
+- OTSU BINARY
+- OTSU BINARY_INV
+- Adaptive Threshold BINARY
+- Adaptive Threshold BINARY_INV
+- Morphology CLOSE
+
+**OCR với Tesseract:**
+- Upscale ROI lên 4x để tăng độ phân giải
+- Thử 4 PSM modes: 10 (single char), 8 (single word), 7 (single line), 13 (raw line)
+- Whitelist: chữ cái A-Z, số 0-9, ký hiệu ∞
+- Chọn kết quả có confidence cao nhất (> 30)
+
+**Sửa lỗi OCR phổ biến:**
+- BY → B
+- rA → A
+- CA → C
+- 8 → ∞ (cho trọng số)
+- OO/00 → ∞
+- 0 → O (cho nhãn)
+- 1 → I (cho nhãn)
+
+### BƯỚC 3: PHÁT HIỆN TRỌNG SỐ (Weights)
+Tìm các số bên ngoài nodes:
+
+**Tạo mask:**
+- Vẽ mask trắng toàn ảnh
+- Tô đen vùng nodes (bán kính + 15 pixels padding)
+- Chỉ còn lại vùng bên ngoài nodes
+
+**Tìm text candidates:**
+- Threshold OTSU BINARY_INV
+- Morphology CLOSE để gộp text
+- Tìm contour có diện tích 30-1500 pixels
+- Kiểm tra aspect ratio 0.3-3
+
+**OCR số:**
+- Upscale ROI lên 3x
+- Whitelist: 0-9 và ∞
+- PSM mode 7 (single line)
+- Chỉ chấp nhận nếu là số hoặc ∞
+
+### BƯỚC 4: PHÁT HIỆN EDGES (Cạnh)
+Tìm các đường nối giữa nodes:
+
+**Canny Edge Detection:**
+- Mask loại bỏ vùng nodes (bán kính + 5 pixels)
+- Canny với threshold 30-100
+
+**Hough Lines:**
+- Phát hiện đoạn thẳng với threshold=40
+- minLineLength=20, maxLineGap=20
+
+**Gán edges vào nodes:**
+- Với mỗi line, tìm 2 nodes gần nhất ở 2 đầu
+- Khoảng cách < 100 pixels mới chấp nhận
+- Tính midpoint của line
+- Tìm weight gần nhất với midpoint (< 50 pixels)
+
+### BƯỚC 5: XUẤT KẾT QUẢ
+
+**JSON Output:**
+```json
+{
+  "nodes": [
+    {"id": 0, "label": "1"},
+    {"id": 1, "label": "2"}
+  ],
+  "edges": [
+    {"from": "1", "to": "2", "weight": 5}
+  ]
+}
+```
+
+**Visualization:**
+- Vẽ vòng tròn xanh lá cho nodes
+- Vẽ nhãn màu đỏ phía trên node
+- Vẽ đường màu xanh dương cho edges
+- Vẽ hộp vàng cho weights
+
+## THAM SỐ QUAN TRỌNG
+
+**Node Detection:**
+- min_area: 400 pixels
+- max_area: 6000 pixels
+- duplicate_threshold: 30 pixels
+
+**OCR:**
+- scale: 4x
+- confidence_threshold: 30
+- max_label_length: 2 characters
+
+**Weight Detection:**
+- min_area: 30 pixels
+- max_area: 1500 pixels
+- aspect_ratio: 0.3 - 3
+
+**Edge Detection:**
+- canny_threshold: 30-100
+- hough_threshold: 40
+- max_node_distance: 100 pixels
+- max_weight_distance: 50 pixels
+
+## CÁCH SỬ DỤNG
+
+```python
+# Khởi tạo
+recognizer = UniversalGraphRecognizer("image.png")
+
+# Xử lý
+recognizer.process()
+
+# In kết quả
+recognizer.output_results()
+
+# Xuất file
+recognizer.export("output_name")
+```
+
+## LƯU Ý
+- Ảnh đầu vào nên có độ phân giải tốt (ít nhất 800x600)
+- Nodes nên có màu sắc rõ ràng hoặc viền đậm
+- Text trong nodes nên rõ ràng, không bị mờ
+- Trọng số nên đặt gần giữa cạnh, không quá gần nodes

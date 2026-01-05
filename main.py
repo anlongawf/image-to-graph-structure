@@ -4,7 +4,7 @@ import pytesseract
 import math
 import json
 
-IMAGE = "1.png"
+IMAGE = "c.jpg"
 
 
 def dist(a, b):
@@ -300,7 +300,6 @@ class UniversalGraphRecognizer:
             '00': '∞',
             '0': 'O',  # Có thể nhầm O thành 0
             '1': 'I',  # Có thể nhầm I thành 1
-            '5': 'S',  # Có thể nhầm S thành 5
         }
 
         # Áp dụng corrections

@@ -6,8 +6,9 @@ import json
 
 IMAGE = "1.png"
 
+
 def dist(a, b):
-    return math.hypot(a[0]-b[0], a[1]-b[1])
+    return math.hypot(a[0] - b[0], a[1] - b[1])
 
 
 class UniversalGraphRecognizer:
@@ -42,16 +43,16 @@ class UniversalGraphRecognizer:
 
         # Detect màu sắc đa dạng (nhiều range)
         color_ranges = [
-            ([0, 100, 100], [25, 255, 255]),     # Đỏ/Cam
-            ([25, 100, 100], [40, 255, 255]),    # Vàng
-            ([40, 50, 50], [80, 255, 255]),      # Xanh lá
-            ([80, 50, 50], [130, 255, 255]),     # Xanh dương
-            ([130, 50, 50], [180, 255, 255]),    # Tím/Hồng
+            ([0, 100, 100], [25, 255, 255]),  # Đỏ/Cam
+            ([25, 100, 100], [40, 255, 255]),  # Vàng
+            ([40, 50, 50], [80, 255, 255]),  # Xanh lá
+            ([80, 50, 50], [130, 255, 255]),  # Xanh dương
+            ([130, 50, 50], [180, 255, 255]),  # Tím/Hồng
         ]
 
         for lower, upper in color_ranges:
             mask = cv2.inRange(hsv, np.array(lower), np.array(upper))
-            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
             mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
             cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -75,7 +76,7 @@ class UniversalGraphRecognizer:
         # Thử cả BINARY và BINARY_INV
         for thresh_type in [cv2.THRESH_BINARY_INV, cv2.THRESH_BINARY]:
             _, th = cv2.threshold(blur, 127, 255, thresh_type)
-            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
             th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel)
 
             cnts, _ = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -165,80 +166,81 @@ class UniversalGraphRecognizer:
 
             # Enhance ROI với nhiều phương pháp
             roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            
+
             # Denoise
             roi_gray = cv2.fastNlMeansDenoising(roi_gray, None, 10, 7, 21)
-            
+
             # Contrast enhancement
             roi_gray = cv2.convertScaleAbs(roi_gray, alpha=1.5, beta=10)
-            
+
             # Tạo nhiều biến thể để thử
             roi_variants = []
-            
+
             # 1. OTSU threshold (BINARY)
             _, th1 = cv2.threshold(roi_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
             roi_variants.append(th1)
-            
+
             # 2. OTSU threshold (BINARY_INV)
             _, th2 = cv2.threshold(roi_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
             roi_variants.append(th2)
-            
+
             # 3. Adaptive threshold
-            th3 = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                       cv2.THRESH_BINARY, 11, 2)
+            th3 = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                        cv2.THRESH_BINARY, 11, 2)
             roi_variants.append(th3)
-            
+
             # 4. Adaptive threshold (INV)
-            th4 = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                       cv2.THRESH_BINARY_INV, 11, 2)
+            th4 = cv2.adaptiveThreshold(roi_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                        cv2.THRESH_BINARY_INV, 11, 2)
             roi_variants.append(th4)
-            
+
             # 5. Morphology để làm rõ text
-            kernel = np.ones((2,2), np.uint8)
+            kernel = np.ones((2, 2), np.uint8)
             th5 = cv2.morphologyEx(th1, cv2.MORPH_CLOSE, kernel)
             roi_variants.append(th5)
-            
+
             # Resize để tăng độ phân giải
             scale = 4  # Tăng scale lên 4
-            roi_variants = [cv2.resize(roi, None, fx=scale, fy=scale, 
-                                      interpolation=cv2.INTER_CUBIC) for roi in roi_variants]
+            roi_variants = [cv2.resize(roi, None, fx=scale, fy=scale,
+                                       interpolation=cv2.INTER_CUBIC) for roi in roi_variants]
 
             # Thử nhiều PSM modes
             psm_modes = [
                 ("--psm 10", "single character"),  # Single character
-                ("--psm 8", "single word"),         # Single word
-                ("--psm 7", "single line"),         # Single line
-                ("--psm 13", "raw line"),           # Raw line
+                ("--psm 8", "single word"),  # Single word
+                ("--psm 7", "single line"),  # Single line
+                ("--psm 13", "raw line"),  # Raw line
             ]
-            
+
             whitelist = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789∞"
-            
+
             label = None
             best_confidence = 0
-            
+
             for roi_variant in roi_variants:
                 for psm_config, _ in psm_modes:
                     config = f"{psm_config} --oem 3 -c tessedit_char_whitelist={whitelist}"
                     try:
                         # Thử với getData để lấy confidence
-                        data = pytesseract.image_to_data(roi_variant, config=config, output_type=pytesseract.Output.DICT)
-                        
+                        data = pytesseract.image_to_data(roi_variant, config=config,
+                                                         output_type=pytesseract.Output.DICT)
+
                         # Lấy text và confidence
                         texts = [t.strip() for t in data['text'] if t.strip()]
                         confidences = [c for c, t in zip(data['conf'], data['text']) if t.strip()]
-                        
+
                         if texts and confidences:
                             # Lấy text có confidence cao nhất
                             max_conf_idx = confidences.index(max(confidences))
                             text = texts[max_conf_idx]
                             confidence = confidences[max_conf_idx]
-                            
+
                             # Clean text
                             text = text.replace(' ', '').replace('\n', '').replace('\t', '')
-                            
+
                             # Post-processing: Sửa các lỗi phổ biến
                             text = self._correct_ocr_errors(text)
-                            
+
                             # Chỉ chấp nhận nếu confidence > 30 và text hợp lệ
                             if text and len(text) <= 2 and confidence > best_confidence and confidence > 30:
                                 label = text
@@ -247,7 +249,7 @@ class UniversalGraphRecognizer:
                                     break
                     except Exception as e:
                         continue
-                
+
                 if label and best_confidence > 70:
                     break
 
@@ -259,7 +261,7 @@ class UniversalGraphRecognizer:
                         text = pytesseract.image_to_string(roi_variant, config=config).strip()
                         text = text.replace(' ', '').replace('\n', '')
                         text = self._correct_ocr_errors(text)
-                        
+
                         if text and len(text) <= 2:
                             label = text
                             break
@@ -270,18 +272,18 @@ class UniversalGraphRecognizer:
 
             # Vẽ
             cv2.circle(self.img_vis, (cx, cy), r, (0, 255, 0), 2)
-            cv2.putText(self.img_vis, node['label'], (cx-15, cy-r-10),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+            cv2.putText(self.img_vis, node['label'], (cx - 15, cy - r - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
 
         print(f"   Labels: {[n['label'] for n in self.nodes]}")
-    
+
     def _correct_ocr_errors(self, text):
         """Sửa các lỗi OCR phổ biến"""
         if not text:
             return text
-        
+
         text = text.upper().strip()
-        
+
         # Mapping các lỗi phổ biến
         corrections = {
             'BY': 'B',
@@ -298,13 +300,12 @@ class UniversalGraphRecognizer:
             '00': '∞',
             '0': 'O',  # Có thể nhầm O thành 0
             '1': 'I',  # Có thể nhầm I thành 1
-            '5': 'S',  # Có thể nhầm S thành 5
         }
-        
+
         # Áp dụng corrections
         if text in corrections:
             return corrections[text]
-        
+
         # Nếu text có 2 ký tự và bắt đầu bằng ký tự đúng, lấy ký tự đầu
         if len(text) == 2:
             # Nếu ký tự đầu là chữ cái hợp lệ và ký tự thứ 2 là lỗi
@@ -313,11 +314,11 @@ class UniversalGraphRecognizer:
             # Nếu ký tự thứ 2 là chữ cái hợp lệ và ký tự đầu là lỗi
             if text[1] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' and text[0] not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789':
                 return text[1]
-        
+
         # Chỉ lấy ký tự đầu nếu là chữ cái hợp lệ
         if len(text) > 1 and text[0] in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
             return text[0]
-        
+
         return text
 
     # ==========================================
@@ -355,7 +356,7 @@ class UniversalGraphRecognizer:
                 # Kiểm tra aspect ratio (text thường có tỷ lệ nhất định)
                 aspect = w / float(h) if h > 0 else 0
                 if 0.3 < aspect < 3:
-                    roi = self.img[y:y+h, x:x+w]
+                    roi = self.img[y:y + h, x:x + w]
 
                     if roi.size == 0:
                         continue
@@ -372,7 +373,7 @@ class UniversalGraphRecognizer:
                         text = text.replace(' ', '').replace('\n', '')
 
                         if text.isdigit() or text == '∞':
-                            center = (x + w//2, y + h//2)
+                            center = (x + w // 2, y + h // 2)
                             value = int(text) if text.isdigit() else text
 
                             self.weights.append({
@@ -382,7 +383,7 @@ class UniversalGraphRecognizer:
                             })
 
                             # Vẽ
-                            cv2.rectangle(self.img_vis, (x, y), (x+w, y+h), (0, 255, 255), 1)
+                            cv2.rectangle(self.img_vis, (x, y), (x + w, y + h), (0, 255, 255), 1)
                     except:
                         pass
 
@@ -409,7 +410,7 @@ class UniversalGraphRecognizer:
         edges_img = cv2.Canny(masked, 30, 100)
 
         # Hough Lines
-        lines = cv2.HoughLinesP(edges_img, 1, np.pi/180, 40, minLineLength=20, maxLineGap=20)
+        lines = cv2.HoughLinesP(edges_img, 1, np.pi / 180, 40, minLineLength=20, maxLineGap=20)
 
         if lines is None:
             print("Không tìm thấy edges")
@@ -473,9 +474,9 @@ class UniversalGraphRecognizer:
 
     def process(self):
         """Pipeline đầy đủ"""
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print("BẮT ĐẦU XỬ LÝ")
-        print("="*50 + "\n")
+        print("=" * 50 + "\n")
 
         self.detect_nodes_universal()
         self.ocr_node_labels()
@@ -486,9 +487,9 @@ class UniversalGraphRecognizer:
 
     def output_results(self):
         """In kết quả"""
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print("KẾT QUẢ")
-        print("="*50)
+        print("=" * 50)
 
         print("\nNODES:")
         for i, node in enumerate(self.nodes):
@@ -550,4 +551,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nLỖI: {e}")
         import traceback
+
         traceback.print_exc()
