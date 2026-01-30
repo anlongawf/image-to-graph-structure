@@ -1,0 +1,43 @@
+GIẢI THÍCH CHI TIẾT CODE 
+========================================
+
+Mã nguồn thực hiện quy trình chuyển đổi hình ảnh đồ thị thành cấu trúc dữ liệu Graph qua 4 bước chính:
+
+1. KHỞI TẠO (Class UniversalGraphRecognizer):
+   - Đọc hình ảnh từ đường dẫn cung cấp.
+   - Tạo các bản sao để vẽ kết quả (img_vis) và bản xám (gray) để xử lý.
+   - Khởi tạo danh sách trống để lưu nodes, edges và weights.
+
+2. BƯỚC 1: PHÁT HIỆN NODES (Hàm detect_nodes_universal):
+   - Sử dụng 3 phương pháp kết hợp để không bỏ sót node:
+     a. Color Detection: Tìm các vùng có màu sắc (xanh, đỏ, vàng...) bằng không gian màu HSV.
+     b. Threshold + Contour: Chuyển ảnh sang đen trắng, tìm các hình khối và lọc theo diện tích + độ tròn (circularity).
+     c. Hough Circle: Thuật toán chuyên dụng tìm hình tròn dựa trên đạo hàm ảnh.
+   - Sau đó gộp các kết quả trùng lặp bằng hàm _remove_duplicate_nodes.
+
+3. BƯỚC 2: NHẬN DIỆN NHÃN NODE (Hàm ocr_node_labels):
+   - Với mỗi node tìm được, code sẽ cắt một vùng nhỏ ở trung tâm node.
+   - Sử dụng pytesseract để đọc chữ cái (A, B, C...).
+   - Có hàm _correct_ocr_errors để sửa thủ công các lỗi phổ biến của OCR (ví dụ: chữ 'B' hay bị đọc nhầm thành 'S' hoặc '8').
+
+4. BƯỚC 3: PHÁT HIỆN TRỌNG SỐ (Hàm detect_weights):
+   - Code che (mask) các vùng chứa node để tránh nhầm nhãn node thành trọng số.
+   - Sử dụng chiến thuật "Multi-pass OCR":
+     * Pass 1: Chạy OCR trên ảnh đen trắng chuẩn.
+     * Pass 2: Chạy OCR trên ảnh đã được làm dày nét (dilation) để bắt được các số mảnh.
+   - Dùng pytesseract.image_to_data để lấy tọa độ chính xác của từng con số tìm thấy trên toàn bộ ảnh.
+
+5. BƯỚC 4: PHÁT HIỆN CẠNH - EDGES (Hàm detect_edges):
+   - Sử dụng Canny Edge Detection và HoughLinesP để tìm các đường thẳng nối giữa các node.
+   - Với mỗi đường thẳng tìm được:
+     * Xác định node bắt đầu và node kết thúc dựa trên khoảng cách gần nhất.
+     * Tìm trọng số gần đường thẳng đó nhất để gán vào cạnh.
+   - Loại bỏ các cạnh trùng lặp hoặc cạnh nối một node với chính nó (self-loop).
+
+6. XUẤT KẾT QUẢ (Hàm export và output_results):
+   - In kết quả ra màn hình console theo định dạng dễ đọc.
+   - Lưu cấu trúc đồ thị vào file universal_graph.json.
+   - Lưu hình ảnh minh họa đã vẽ các node, cạnh và nhãn vào file universal_graph_visualization.jpg.
+
+7. LUỒNG CHÍNH (Khối if __name__ == "__main__"):
+   - Điểm bắt đầu của chương trình, gọi tuần tự các bước xử lý và bắt lỗi bằng try-except.

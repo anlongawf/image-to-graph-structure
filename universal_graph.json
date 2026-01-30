@@ -2,11 +2,11 @@
   "nodes": [
     {
       "id": 0,
-      "label": "D"
+      "label": "A"
     },
     {
       "id": 1,
-      "label": "F"
+      "label": "D"
     },
     {
       "id": 2,
@@ -14,7 +14,7 @@
     },
     {
       "id": 3,
-      "label": "G"
+      "label": "F"
     },
     {
       "id": 4,
@@ -22,102 +22,39 @@
     },
     {
       "id": 5,
-      "label": "A"
-    },
-    {
-      "id": 6,
       "label": "B"
-    },
-    {
-      "id": 7,
-      "label": "H"
     }
   ],
   "edges": [
     {
-      "from": "A",
-      "to": "B",
-      "weight": null
-    },
-    {
-      "from": "A",
-      "to": "G",
-      "weight": null
-    },
-    {
-      "from": "E",
-      "to": "A",
-      "weight": null
-    },
-    {
-      "from": "A",
-      "to": "B",
-      "weight": null
-    },
-    {
-      "from": "E",
-      "to": "A",
-      "weight": null
-    },
-    {
-      "from": "C",
-      "to": "B",
-      "weight": null
-    },
-    {
-      "from": "A",
-      "to": "G",
-      "weight": null
+      "from": "D",
+      "to": "F",
+      "weight": 47
     },
     {
       "from": "D",
-      "to": "G",
-      "weight": null
-    },
-    {
-      "from": "A",
-      "to": "F",
-      "weight": null
-    },
-    {
-      "from": "D",
-      "to": "G",
-      "weight": null
-    },
-    {
-      "from": "C",
-      "to": "B",
-      "weight": null
-    },
-    {
-      "from": "G",
-      "to": "H",
-      "weight": null
-    },
-    {
-      "from": "G",
-      "to": "H",
-      "weight": null
-    },
-    {
-      "from": "A",
-      "to": "F",
-      "weight": null
-    },
-    {
-      "from": "G",
-      "to": "C",
-      "weight": null
-    },
-    {
-      "from": "G",
-      "to": "C",
-      "weight": null
+      "to": "E",
+      "weight": 38
     },
     {
       "from": "F",
-      "to": "D",
-      "weight": null
+      "to": "E",
+      "weight": 12
+    },
+    {
+      "from": "B",
+      "to": "A",
+      "weight": 8
+    },
+    {
+      "from": "A",
+      "to": "F",
+      "weight": 14
+    },
+    {
+      "from": "B",
+      "to": "C",
+      "weight": 7
     }
   ]
 }
