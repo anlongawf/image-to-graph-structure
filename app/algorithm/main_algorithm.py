@@ -4,7 +4,7 @@ import pytesseract
 import math
 import json
 
-IMAGE = "/Users/anphan/Desktop/image-to-graph-structure/img/D.png"
+IMAGE = "/Users/anphan/Desktop/image-to-graph-structure/img/A.png"
 
 
 def dist(a, b):
@@ -23,6 +23,13 @@ class UniversalGraphRecognizer:
         self.nodes = []
         self.edges = []
         self.weights = []
+        self.logs = []
+        
+    def _log(self, msg):
+        print(msg)
+        import datetime
+        time_str = datetime.datetime.now().strftime("%H:%M:%S")
+        self.logs.append(f"[{time_str}] {msg}")
 
     def preprocess_image(self):
         """Tạo nhiều phiên bản ảnh binary để tăng khả năng detect"""
@@ -64,7 +71,7 @@ class UniversalGraphRecognizer:
         2. Contour detection (nhiều thresholds)
         3. Circle detection (Hough)
         """
-        print("🔍 Phát hiện nodes (universal)...")
+        self._log("🔍 Phát hiện nodes (universal)...")
 
         candidates = []
 
@@ -140,7 +147,7 @@ class UniversalGraphRecognizer:
 
         # Loại bỏ duplicate
         self.nodes = self._remove_duplicate_nodes(candidates)
-        print(f"Tìm thấy {len(self.nodes)} nodes")
+        self._log(f"Tìm thấy {len(self.nodes)} nodes")
         return self.nodes
 
     def _remove_duplicate_nodes(self, candidates, threshold=30):
@@ -173,7 +180,7 @@ class UniversalGraphRecognizer:
 
     def ocr_node_labels(self):
         """OCR đọc nhãn trong nodes - Cải thiện độ chính xác"""
-        print("OCR nhãn nodes...")
+        self._log("OCR nhãn nodes...")
 
         for i, node in enumerate(self.nodes):
             cx, cy = node['center']
@@ -271,7 +278,7 @@ class UniversalGraphRecognizer:
             cv2.putText(self.img_vis, label_text, (tx, ty), font, font_scale, (255, 255, 255), thickness)
             cv2.circle(self.img_vis, (cx, cy), r, (0, 255, 0), 2)
 
-        print(f"   Labels: {[n['label'] for n in self.nodes]}")
+        self._log(f"   Labels: {[n['label'] for n in self.nodes]}")
 
     def _correct_ocr_errors(self, text):
         """Sửa các lỗi OCR phổ biến"""
@@ -352,7 +359,7 @@ class UniversalGraphRecognizer:
 
     def detect_weights(self):
         """Phát hiện số bên ngoài nodes (trọng số) theo phương pháp Component-based"""
-        print("Phát hiện trọng số (Component-based)...")
+        self._log("Phát hiện trọng số (Component-based)...")
 
         # 1. Mask loại bỏ nodes
         mask_nodes = np.ones_like(self.gray) * 255
@@ -403,7 +410,7 @@ class UniversalGraphRecognizer:
         merged_candidates = self._merge_close_boxes(candidates, distance_th=35)
 
         # 4. OCR từng vùng
-        print(f"   Tìm thấy {len(merged_candidates)} vùng tiềm năng, bắt đầu OCR từng vùng...")
+        self._log(f"   Tìm thấy {len(merged_candidates)} vùng tiềm năng, bắt đầu OCR từng vùng...")
         
         whitelist = "-c tessedit_char_whitelist=0123456789"
         psm_modes = ["--psm 10", "--psm 7", "--psm 6"] # prioritized single char/line
@@ -476,7 +483,7 @@ class UniversalGraphRecognizer:
                      cv2.rectangle(self.img_vis, (x, y), (x+w, y+h), (0, 165, 255), 2)
                      cv2.putText(self.img_vis, str(value), (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 165, 255), 2)
 
-        print(f"Tìm thấy {len(self.weights)} trọng số: {[w['value'] for w in self.weights]}")
+        self._log(f"Tìm thấy {len(self.weights)} trọng số: {[w['value'] for w in self.weights]}")
 
     def _merge_close_boxes(self, candidates, distance_th=20):
         """Gộp các bounding box gần nhau (ví dụ số có 2 chữ số)"""
@@ -544,7 +551,7 @@ class UniversalGraphRecognizer:
 
     def detect_edges(self):
         """Phát hiện edges và gán trọng số"""
-        print("Phát hiện edges...")
+        self._log("Phát hiện edges...")
 
         # Mask loại nodes
         mask = np.ones_like(self.gray) * 255
@@ -562,7 +569,7 @@ class UniversalGraphRecognizer:
         lines = cv2.HoughLinesP(edges_img, 1, np.pi / 180, 40, minLineLength=20, maxLineGap=20)
 
         if lines is None:
-            print("Không tìm thấy edges")
+            self._log("Không tìm thấy edges")
             return
 
         detected_pairs = {} # (n1, n2) -> {weight, line}
@@ -644,7 +651,7 @@ class UniversalGraphRecognizer:
             data['weight'] = best_weight
 
         self.edges = list(detected_pairs.values())
-        print(f"Tìm thấy {len(self.edges)} edges")
+        self._log(f"Tìm thấy {len(self.edges)} edges")
 
     def _point_line_segment_distance(self, px, py, x1, y1, x2, y2):
         """Tính khoảng cách từ điểm (px,py) đến đoạn thẳng (x1,y1)-(x2,y2)"""
@@ -687,9 +694,9 @@ class UniversalGraphRecognizer:
 
     def process(self):
         """Pipeline đầy đủ"""
-        print("\n" + "=" * 50)
-        print("BẮT ĐẦU XỬ LÝ")
-        print("=" * 50 + "\n")
+        self._log("\n" + "=" * 50)
+        self._log("BẮT ĐẦU XỬ LÝ")
+        self._log("=" * 50 + "\n")
 
         self.detect_nodes_universal()
         self.ocr_node_labels()
@@ -734,18 +741,22 @@ class UniversalGraphRecognizer:
                     "weight": e['weight']
                 }
                 for e in self.edges
-            ]
+            ],
+            "logs": self.logs
         }
 
         with open(f"{basename}.json", "w", encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
         # Visualization
-        cv2.imwrite(f"{basename}_visualization.jpg", self.img_vis)
+        viz_path = f"{basename}_visualization.jpg"
+        cv2.imwrite(viz_path, self.img_vis)
 
         print("\nĐã lưu:")
         print(f"{basename}.json")
-        print(f"{basename}_visualization.jpg")
+        print(viz_path)
+        
+        return data, viz_path
 
 
 # ==========================================

@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+python-multipart
+sqlalchemy
+opencv-python-headless
+pytesseract
+pillow
+numpy
+scipy
+imutils
+passlib[bcrypt]
+python-jose[cryptography]

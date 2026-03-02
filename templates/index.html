@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chuyển đồ thị từ ảnh sang dạng ngôn ngữ có cấu trúc.</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="auth-title">Đăng Nhập</h2>
+            <div id="auth-error" style="color: red; margin-bottom: 10px; font-size: 0.9rem;"></div>
+            <input type="email" id="auth-email" placeholder="Email" class="auth-input">
+            <input type="password" id="auth-password" placeholder="Mật khẩu" class="auth-input">
+            <button id="auth-submit-btn" class="control-btn" style="width: 100%; margin-top: 10px;">Đăng Nhập</button>
+            <p style="text-align: center; margin-top: 10px; font-size: 0.9rem;">
+                <a href="#" id="auth-toggle">Chưa có tài khoản? Đăng ký ngay</a>
+            </p>
+        </div>
+    </div>
+
+    <header class="header">
+        <div>
+            <h1>chuyển đồ thị từ ảnh sang dạng ngôn ngữ có cấu trúc</h1>
+        </div>
+        <div class="user-controls">
+            <span id="user-greeting" style="display: none; margin-right: 15px; font-weight: bold;"></span>
+            <button id="btn-history" class="btn-secondary" style="display: none; margin-top:0;">Lịch Sử</button>
+            <button id="btn-login" class="control-btn" style="margin-top:0;">Đăng Nhập</button>
+            <button id="btn-logout" class="btn-secondary" style="display: none; margin-top:0;">Đăng Xuất</button>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Bảng điều khiển: Tải ảnh & Log -->
+        <section class="panel">
+            <h2 class="panel-title">1. Đầu Vào (Input)</h2>
+
+            <div id="upload-area" class="upload-area">
+                <input type="file" id="file-input" accept="image/png, image/jpeg, image/jpg">
+                <div class="upload-icon"></div>
+                <div class="upload-text">Kéo thả hình ảnh sơ đồ đồ thị vào đây</div>
+                <div style="font-size: 0.8rem; color: #6c757d; margin-top: 10px;">Hoặc</div>
+                <button class="upload-btn">Chọn File Từ Máy Tính</button>
+            </div>
+
+            <div id="preview-container" class="image-preview-container">
+                <img id="preview-img" class="image-preview" src="" alt="Preview">
+                <div class="action-row" style="width: 100%; justify-content: space-between;">
+                    <button id="remove-btn" class="btn-secondary">Hủy bỏ</button>
+                    <button id="process-btn" class="control-btn" disabled>Chạy Thuật Toán Nhận Diện</button>
+                </div>
+            </div>
+
+            <h3 style="font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #495057;">Nhật ký hệ thống
+                (System Logs):</h3>
+            <div id="status-log" class="status-log"></div>
+        </section>
+
+        <!-- Bảng Kết Quả: JSON & Visual -->
+        <section class="panel">
+            <h2 class="panel-title">2. Kết Quả (Output)</h2>
+
+            <div class="result-tabs">
+                <div id="tab-text" class="tab active">Diễn Giải (Văn Bản)</div>
+                <div id="tab-json" class="tab">Mô Hình Dữ Liệu (JSON)</div>
+                <div id="tab-visual" class="tab">Hình Ảnh Trực Quan (Visualization)</div>
+            </div>
+
+            <div id="spinner" class="spinner"></div>
+
+            <div id="content-text" class="tab-content active">
+                <div id="text-output" class="text-output"><!-- Văn bản kết quả sẽ nằm đây -->Vui lòng tải ảnh sơ đồ lên
+                    để xem kết quả phân tích.</div>
+            </div>
+
+            <div id="content-json" class="tab-content">
+                <pre id="json-output"
+                    class="json-output">// Dữ liệu JSON sẽ hiển thị tại đây sau khi phân tích thành công.</pre>
+                <div class="action-row" style="margin-top: 15px;">
+                    <button id="download-json" class="control-btn" disabled>Tải Xuống File JSON</button>
+                    <button id="share-btn" class="btn-secondary" style="margin-left: 10px;" disabled>🔗 Copy Link Chia
+                        Sẻ</button>
+                </div>
+            </div>
+
+            <div id="content-visual" class="tab-content">
+                <div
+                    style="flex: 1; display: flex; align-items: center; justify-content: center; background: #e9ecef; border-radius: 4px; padding: 10px;">
+                    <img id="visual-result" class="visual-result-img" src="" alt="Result Visualization"
+                        onerror="this.style.display='none'" onload="this.style.display='block'">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,99 @@
+BÁO CÁO THUẬT TOÁN: NHẬN DIỆN CẤU TRÚC ĐỒ THỊ TỪ HÌNH ẢNH (CV + OCR)
+========================================================================
+
+1. PHÁT BIỂU THUẬT TOÁN
+
+1.1 Đặt Vấn Đề
+Chuyển đổi các sơ đồ đồ thị từ định dạng hình ảnh (dữ liệu phi cấu trúc) sang cấu trúc dữ liệu Graph (JSON/Object) để máy tính có thể xử lý các thuật toán lý thuyết đồ thị.
+
+1.2 Input / Output
+- INPUT: Hình ảnh sơ đồ đồ thị (định dạng .png, .jpg, .jpeg) chứa các đỉnh, cạnh và trọng số.
+- OUTPUT — Bộ thành phần cấu trúc (UniversalGraph):
+  + nodes: Danh sách đối tượng đỉnh {id, label, coordinate}
+  + edges: Danh sách đối tượng cạnh {from, to, weight}
+  + metadata: Thông tin về màu sắc, kích thước và phân loại đồ thị.
+
+1.3 Các Kỹ Thuật Xử Lý Chính
+| Kỹ Thuật | Mô Tả | Mục Tiêu |
+|----------|-------|----------|
+| **Xử lý Đa ngưỡng (Multi-thresholding)** | Tạo 6 bản ảnh từ 3 kỹ thuật chính (đều có bản Thuận & Âm bản): <br>1. **Cố định:** Cắt theo một mức sáng nhất định. <br>2. **Thích nghi:** Tự điều chỉnh theo từng vùng nhỏ. <br>3. **Tự động (Auto):** Máy tự tính toán mức cắt tốt nhất. | **Xử lý mọi loại ảnh:** <br>- Nếu ảnh tối: **Âm bản** sẽ làm nổi bật nét vẽ. <br>- Nếu ảnh bị bóng đè: **Thích nghi** sẽ cân bằng lại. <br>- Nếu không biết chọn mức nào: **Tự động** sẽ tự lo liệu. |
+| **Lọc màu (HSV Masking)** | Chuyển sang hệ màu HSV để tách biệt "Màu sắc" khỏi "Độ sáng". Tạo một "mặt nạ" để chỉ giữ lại những vùng có màu cần tìm (Xanh, Đỏ, Vàng...). | **Tìm đỉnh có màu:** <br>Giúp "nhặt" đúng các đỉnh được tô màu ra khỏi tấm ảnh một cách chính xác, dù ảnh có bị sáng quá hay tối quá thì màu sắc vẫn không bị nhầm lẫn. |
+| **Nhận diện hình khối (Hough Transform)** | Sử dụng toán học để "đoán" hình dạng từ các điểm ảnh: <br>1. **Đường tròn:** Lấy tâm và bán kính đỉnh. <br>2. **Đường thẳng:** Nối các điểm rời rạc thành cạnh. | **Biến nét vẽ thành vật thể:** <br>Dù bạn vẽ tay hơi méo hay nét vẽ bị đứt quãng một chút, máy vẫn "hình dung" ra được đúng hình tròn (Đỉnh) và đường thẳng (Cạnh) một cách hoàn hảo. |
+| **Đọc chữ & số (Tesseract OCR)** | Sử dụng trí tuệ nhân tạo để "nhìn" hình ảnh và chuyển thành văn bản hoặc con số (đọc chữ cái nhãn đỉnh và đọc con số trọng số). | **Lấy dữ liệu chữ/số:** <br>Chuyển nhãn (A, B, C...) và trọng số (10, 20...) từ dạng ảnh sang dạng dữ liệu để máy tính tính toán được. |
+| **Logic khoảng cách (Spatial Heuristics)** | Dùng công thức toán học tính khoảng cách Euclid để xem nhãn nào gần đỉnh nào, con số nào nằm sát cạnh nào. | **Gắn kết dữ liệu:** <br>Đảm bảo nhãn "A" phải đi với đỉnh "A", và trọng số "5" phải được gán đúng cho cạnh nối giữa hai đỉnh đó, không bị gán nhầm. |
+
+2. BÀI TOÁN THIẾT KẾ (DESIGN)
+
+2.1 Phân Tích Yêu Cầu
+- Nhận diện đa năng: Tìm được cả đỉnh hình tròn vẽ tay và đỉnh có tô màu. 
+- Xử lý kép: Vừa vẽ lại được khung đồ thị, vừa đọc đúng tên đỉnh và con số trọng số.
+- Thông minh: Tự sửa các lỗi đọc nhầm chữ (ví dụ: chữ 'B' hay bị đọc nhầm thành số '8').
+
+2.2 Quy Trình Xử Lý (Pipeline)
+Gồm 6 bước theo thứ tự:
+1. Chuẩn bị: Chuyển ảnh về đen trắng để máy dễ nhìn.
+2. Tìm Đỉnh: Quét ảnh để xác định vị trí các hình tròn.
+3. Đọc Nhãn Đỉnh: Nhìn vào giữa hình tròn vừa tìm được để đọc chữ cái (A, B, C...).
+4. Đọc Trọng Số: "Che" các vùng đỉnh lại để tập trung tìm các con số nằm rải rác bên ngoài.
+5. Tìm Cạnh: Nối các đỉnh lại bằng các đường thẳng tìm được.
+6. Xuất File: Tổng hợp lại thành file JSON để sử dụng.
+
+2.3 Cách Máy Tìm Đỉnh (Nodes)
+Máy dùng kết hợp cả 3 "ông thám tử" cùng lúc để đảm bảo không bỏ sót:
+- Soi màu: Nhặt các đỉnh có tô màu rực rỡ (Xanh, Đỏ...).
+- Soi khối: Tìm các hình có độ tròn và độ đặc theo tiêu chuẩn.
+- Soi toán: Dùng thuật toán chuyên dụng dò tìm cấu trúc hình tròn.
+=> Sau đó máy sẽ gộp kết quả lại (nếu 3 ông cùng tìm thấy 1 chỗ thì chỉ lấy 1 đỉnh).
+
+2.4 Cách Máy Gán Số (Weights)
+- Máy tính khoảng cách: Nếu con số nằm rất gần một đường thẳng (Cạnh), máy sẽ hiểu con số đó chính là "cân nặng" của cạnh đó.
+
+3. QUY TRÌNH THỰC HIỆN
+
+3.1 Các bước chính
+[Ảnh Gốc] -> [Làm sạch ảnh] -> [Tìm Đỉnh & Chữ] -> [Tìm Cạnh & Số] -> [Kết nối lại] -> [Lưu file JSON]
+
+3.2 Chi tiết tìm Đỉnh
+- Máy quét qua các bản ảnh đen trắng đã tạo.
+- Lọc ra các hình có diện tích vừa phải (không quá to, không quá nhỏ).
+- Gộp những hình nằm chồng lên nhau thành một đỉnh duy nhất.
+
+4. MÃ GIẢ QUY TRÌNH (PSEUDOCODE)
+
+HÀM NhanDienDoThi(AnhGoc):
+    # Bước 1: Tiền xử lý - Tạo 6 bản ảnh nhị phân đa ngưỡng
+    DanhSachAnh = TienXuLy(AnhGoc)
+
+    # Bước 2: Tìm Đỉnh (Nodes) - Kết hợp 3 phương pháp
+    DanhSachDinh = TimDinh_Mau() + TimDinh_HinhKhoi(DanhSachAnh) + TimDinh_Hough()
+    DanhSachDinh = LocBoTrungLap(DanhSachDinh)
+
+    # Bước 3: Đọc Nhãn và Trọng số (OCR)
+    CHO MỖI Dinh TRONG DanhSachDinh:
+        Dinh.Ten = DocChuCai(Dinh) # Đọc A, B, C và sửa lỗi B-8
+
+    AnhDaCheDinh = CheVungDinh(AnhGoc, DanhSachDinh)
+    DanhSachSo = DocTrongSo(AnhDaCheDinh) # Tìm các con số 10, 20...
+
+    # Bước 4: Tìm Cạnh và Gắn kết dữ liệu
+    DanhSachCanh = TimDuongThang(AnhGoc)
+    CHO MỖI Canh TRONG DanhSachCanh:
+        Canh.GiaTri = TimSoGanNhat(Canh, DanhSachSo)
+
+    TRẢ VỀ Kết Quả (Lưu JSON & Vẽ ảnh Visualization)
+
+5. CÁC VÍ DỤ KIỂM TRA (TEST CASES)
+
+- Ví dụ 1: Ảnh có các vòng tròn màu Đỏ và Xanh -> Máy phải nhặt đúng các vòng tròn đó.
+- Ví dụ 2: Ảnh có các con số nằm sát đường kẻ -> Máy phải gán đúng số cho đường kẻ đó.
+
+6. CẤU TRÚC THƯ MỤC DỰ ÁN
+
+image-to-graph-structure/
+├── main1.py                    # File chạy chính của chương trình
+├── code_explanation.txt        # Bản giải thích code bằng tiếng Việt
+├── libraries.txt               # Các thư viện cần cài đặt
+├── img/                        # Nơi để các ảnh đầu vào (A, B, C, D)
+├── universal_graph.json        # File kết quả (dạng dữ liệu)
+└── universal_graph_visualization.jpg # Ảnh kết quả (có vẽ khung nhận diện)
+

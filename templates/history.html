@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch Sử Phân Tích Đồ Thị</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            background: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .history-container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-item {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            background: #fff;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-imgs {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .btn-back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .btn-back:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div>
+            <h1>Chuyển đồ thị từ ảnh sang dạng ngôn ngữ có cấu trúc.</h1>
+        </div>
+        <div class="user-controls">
+            <span id="user-greeting" style="display: inline-block; margin-right: 15px; font-weight: bold;"></span>
+            <button id="btn-logout" class="btn-secondary" style="margin-top:0;">Đăng Xuất</button>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <section class="history-container">
+            <a href="/" class="btn-back">⬅ Quay lại màn hình chính</a>
+            <h2 class="panel-title"
+                style="margin-bottom: 20px; text-align: center; font-size: 1.8rem; border-bottom: none;">Các Graph Đã
+                Được Phân Tích Của Bạn</h2>
+
+            <div id="error-msg" style="color: red; margin-bottom: 10px; text-align: center;"></div>
+
+            <ul id="history-list" style="list-style: none; padding: 0;">
+                <li style="text-align: center; padding: 20px;">Đang tải dữ liệu Lịch sử...</li>
+            </ul>
+        </section>
+    </main>
+
+    <script src="/static/js/history.js"></script>
+</body>
+
+</html>
