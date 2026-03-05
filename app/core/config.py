@@ -12,7 +12,10 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
     
+    # API Keys cho bên ngoài (phân cách bằng dấu phẩy trong .env)
+    API_KEYS: str = "test_key_123"
+    
     class Config:
-        env_file = ".env"
+        pass
 
 settings = Settings()
