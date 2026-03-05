@@ -30,6 +30,12 @@ build/
 # Uploads (user-generated content)
 static/uploads/
 
+# Test images
+img/
+
+# Internal docs
+docs/
+
 # Logs
 *.log
 

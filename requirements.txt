@@ -8,7 +8,5 @@ opencv-python-headless
 pytesseract
 pillow
 numpy
-scipy
-imutils
-passlib[bcrypt]
+bcrypt
 python-jose[cryptography]
