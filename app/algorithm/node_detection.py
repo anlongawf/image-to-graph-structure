@@ -93,13 +93,14 @@ def _detect_by_contour(gray: np.ndarray, min_area: int, max_area: int) -> list:
                 hull_area = cv2.contourArea(hull)
                 solidity = float(area) / hull_area if hull_area > 0 else 0
 
-                if circularity > 0.5 and solidity > 0.8:
+                if circularity > 0.8 and solidity > 0.95:
                     (x, y), r = cv2.minEnclosingCircle(cnt)
-                    candidates.append({
-                        'center': (int(x), int(y)),
-                        'radius': int(r),
-                        'method': f'contour_{name}'
-                    })
+                    if r > 35:  # Filter out small detections like digits (0 in 20)
+                        candidates.append({
+                            'center': (int(x), int(y)),
+                            'radius': int(r),
+                            'method': f'contour_{name}'
+                        })
 
     return candidates
 
@@ -109,7 +110,7 @@ def _detect_by_hough(gray: np.ndarray) -> list:
     candidates = []
     circles = cv2.HoughCircles(
         gray, cv2.HOUGH_GRADIENT, dp=1, minDist=30,
-        param1=100, param2=30, minRadius=15, maxRadius=60
+        param1=100, param2=70, minRadius=35, maxRadius=60
     )
 
     if circles is not None:
@@ -126,21 +127,34 @@ def _detect_by_hough(gray: np.ndarray) -> list:
 
 
 def _remove_duplicate_nodes(candidates: list, threshold: int = 30) -> list:
-    """Gộp các nodes trùng lặp — ưu tiên circle lớn hơn."""
+    """Gộp các nodes trùng lặp — ưu tiên circle lớn hơn và xử lý bao hàm."""
     if not candidates:
         return []
 
+    # Sắp xếp theo bán kính giảm dần
     candidates.sort(key=lambda x: x['radius'], reverse=True)
 
     unique = []
     for cand in candidates:
         is_duplicate = False
+        cx1, cy1 = cand['center']
+        r1 = cand['radius']
+        
         for node in unique:
-            d = dist(cand['center'], node['center'])
-            if d < max(cand['radius'], node['radius']):
+            cx2, cy2 = node['center']
+            r2 = node['radius']
+            d = dist((cx1, cy1), (cx2, cy2))
+            
+            # 1. Nếu tâm rất gần nhau
+            if d < threshold:
                 is_duplicate = True
                 break
-
+            
+            # 2. Nếu một node nằm hoàn toàn hoặc phần lớn trong node khác (containment)
+            if d < r2 * 0.8: # cand nằm trong node đã có
+                is_duplicate = True
+                break
+                
         if not is_duplicate:
             unique.append(cand)
 

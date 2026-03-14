@@ -26,44 +26,63 @@ def detect_edges(gray: np.ndarray, img_vis: np.ndarray,
     for node in nodes:
         cx, cy = node['center']
         r = node['radius']
-        cv2.circle(mask, (cx, cy), r + 5, 0, -1)
+        # Mask slightly smaller than radius to keep line endpoints touching the boundary
+        cv2.circle(mask, (cx, cy), r - 5, 0, -1)
 
     masked = cv2.bitwise_and(gray, mask)
 
     # Canny + Hough Lines
     edges_img = cv2.Canny(masked, 30, 100)
-    lines = cv2.HoughLinesP(edges_img, 1, np.pi / 180, 40, minLineLength=20, maxLineGap=20)
+    lines = cv2.HoughLinesP(edges_img, 1, np.pi / 180, 20, minLineLength=5, maxLineGap=80)
+
+    detected_pairs = {}  # (n1, n2) -> edge data
 
     if lines is None:
         return []
 
-    detected_pairs = {}  # (n1, n2) -> edge data
+    num_nodes = len(nodes)
+    for i in range(num_nodes):
+        for j in range(i + 1, num_nodes):
+            n1, n2 = i, j
+            c1 = nodes[n1]['center']
+            c2 = nodes[n2]['center']
+            edge_len = dist(c1, c2)
 
-    for line in lines:
-        x1, y1, x2, y2 = line[0]
+            if edge_len < 10:
+                continue
 
-        n1, d1 = find_nearest_node((x1, y1), nodes)
-        n2, d2 = find_nearest_node((x2, y2), nodes)
+            score = 0
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                seg_len = dist((x1, y1), (x2, y2))
+                if seg_len < 3:
+                    continue
 
-        if n1 is not None and n2 is not None and n1 != n2:
-            if d1 < 120 and d2 < 120:
+                # Tính khoảng cách từ 2 mút đoạn thẳng đến cạnh "lý thuyết" n1-n2
+                d1 = point_line_segment_distance(x1, y1, c1[0], c1[1], c2[0], c2[1])
+                d2 = point_line_segment_distance(x2, y2, c1[0], c1[1], c2[0], c2[1])
+
+                # Endpoints must be close to the ideal line
+                if d1 < 30 and d2 < 30:
+                    # Kiểm tra độ song song
+                    dot = (x2 - x1) * (c2[0] - c1[0]) + (y2 - y1) * (c2[1] - c1[1])
+                    cos_val = dot / (seg_len * edge_len)
+
+                    if abs(cos_val) > 0.85:  # Góc lệch < ~30 độ
+                        score += seg_len
+
+            # Nếu tổng chiều dài các đoạn trùng lắp đủ lớn (Cải tiến: Yêu cầu cả % chiều dài cạnh)
+            if score > max(35, edge_len * 0.25):
                 pair = tuple(sorted((n1, n2)))
-
-                line_len = math.hypot(x1 - x2, y1 - y2)
-                c1 = nodes[n1]['center']
-                c2 = nodes[n2]['center']
-                node_dist = dist(c1, c2)
-
-                if line_len > node_dist * 0.3:
-                    if pair not in detected_pairs:
-                        detected_pairs[pair] = {
-                            'from': n1,
-                            'to': n2,
-                            'weight': None,
-                            'line': (x1, y1, x2, y2)
-                        }
-
-                    cv2.line(img_vis, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                # Vẽ cạnh sạch sẽ từ tâm đến tâm
+                cv2.line(img_vis, c1, c2, (255, 0, 0), 2)
+                
+                detected_pairs[pair] = {
+                    'from': n1,
+                    'to': n2,
+                    'weight': None,
+                    'line': (c1[0], c1[1], c2[0], c2[1])
+                }
 
     # Gán trọng số cho edges
     for pair, data in detected_pairs.items():

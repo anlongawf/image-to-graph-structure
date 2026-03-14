@@ -6,7 +6,7 @@
     <title>Image2Graph - Chuyển đổi đồ thị từ ảnh sang cấu trúc dữ liệu</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/css/style.css">
-    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="bg-gray-50 min-h-screen font-sans">
     <div id="auth-modal" class="modal fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50">
@@ -38,7 +38,13 @@
                 <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">G</div>
                 <h1 class="text-xl font-bold text-gray-900 hidden sm:block">Image2Graph</h1>
             </div>
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-6">
+                <a href="/prompt-tool" class="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors flex items-center bg-blue-50 px-4 py-2 rounded-full border border-blue-100 shadow-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    Tiêu chuẩn ảnh & Tạo mẫu
+                </a>
                 <span id="user-greeting" class="hidden text-sm font-medium text-gray-700"></span>
                 <button id="btn-history" class="hidden text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Lịch Sử</button>
                 <button id="btn-login" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors">Đăng Nhập</button>
@@ -89,36 +95,45 @@
                             Kết Quả (Output)
                         </h2>
                     </div>
-                    <div class="flex border-b border-gray-200 bg-gray-50">
-                        <button id="tab-visual" class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 bg-white">Trực Quan</button>
-                        <button id="tab-text" class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">Diễn Giải</button>
-                        <button id="tab-json" class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">JSON</button>
-                    </div>
-                    <div class="flex-1 relative overflow-hidden bg-gray-50">
-                        <div id="spinner" class="hidden absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-80">
+                    <div class="flex-1 relative overflow-y-auto bg-gray-50 p-6 space-y-8">
+                        <div id="spinner" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-white bg-opacity-80">
                             <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
                         </div>
-                        <div id="content-visual" class="tab-content h-full p-4">
-                            <div id="graph-container" class="w-full h-full bg-white rounded-lg border border-gray-200 overflow-hidden">
-                                <div id="mynetwork" class="w-full h-full min-h-[400px]"></div>
-                                <div id="no-result-visual" class="h-full flex flex-col items-center justify-center text-gray-400 p-8 text-center">
-                                    <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                        <!-- 1. Technical Visualization (Algorithm View) -->
+                        <div class="space-y-4">
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-widest border-l-4 border-blue-600 pl-3">Trực quan thuật toán (Overlay)</h3>
+                            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden relative min-h-[400px] flex items-center justify-center bg-slate-100 shadow-inner">
+                                <img id="result-img" class="w-full h-auto object-contain cursor-zoom-in hidden" src="" alt="Algorithm Visualization">
+                                <div id="no-result-visual" class="flex flex-col items-center justify-center text-gray-400 p-8 text-center bg-white w-full h-full">
+                                    <svg class="w-16 h-16 mb-4 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                                     </svg>
-                                    <p>Vui lòng chạy thuật toán để xem đồ thị tương tác</p>
+                                    <p class="font-medium">Chưa có kết quả phân tích</p>
+                                    <p class="text-xs mt-2 italic">Vui lòng tải ảnh lên và nhấn "Chạy thuật toán"</p>
                                 </div>
                             </div>
                         </div>
-                        <div id="content-text" class="tab-content hidden h-full p-6">
-                            <div id="text-output" class="prose prose-blue max-w-none text-gray-600">Vui lòng tải ảnh sơ đồ lên để xem kết quả phân tích.</div>
+
+                        <!-- 2. Structured Interpretation -->
+                        <div class="space-y-4">
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-widest border-l-4 border-green-600 pl-3">Diễn giải cấu trúc</h3>
+                            <div id="text-output" class="bg-white rounded-xl border border-gray-200 p-6 text-gray-600 min-h-[100px] shadow-sm">Vui lòng chạy thuật toán để xem chi tiết đỉnh và cạnh.</div>
                         </div>
-                        <div id="content-json" class="tab-content hidden h-full flex flex-col p-6">
-                            <div class="flex-1 bg-gray-900 rounded-lg p-4 font-mono text-sm text-green-400 overflow-auto">
-                                <pre id="json-output">// JSON output...</pre>
+
+                        <!-- 3. Export & Data -->
+                        <div class="space-y-4">
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-widest border-l-4 border-amber-600 pl-3">Dữ liệu JSON & Xuất bản</h3>
+                            <div class="bg-gray-900 rounded-xl p-6 font-mono text-sm text-green-400 overflow-auto max-h-60 shadow-xl">
+                                <pre id="json-output">// Chờ dữ liệu JSON...</pre>
                             </div>
-                            <div class="mt-4 flex space-x-3">
-                                <button id="download-json" class="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium disabled:opacity-50" disabled>Tải JSON</button>
-                                <button id="share-btn" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50" disabled>🔗 Chia sẻ</button>
+                            <div class="flex space-x-4">
+                                <button id="download-json" class="flex-1 px-6 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 transition-all font-bold shadow-md disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    Tải JSON
+                                </button>
+                                <button id="share-btn" class="flex-1 px-6 py-3 border-2 border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    🔗 Chia sẻ kết quả
+                                </button>
                             </div>
                         </div>
                     </div>

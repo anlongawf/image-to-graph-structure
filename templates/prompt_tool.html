@@ -3,138 +3,272 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prompt Tool - Tạo Prompt Ảnh Đồ Thị</title>
+    <title>Tiêu Chuẩn Hình Ảnh - Image2Graph</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .standard-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .standard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-900">
-    <div class="max-w-5xl mx-auto px-4 py-8">
-        <div class="flex items-center justify-between mb-6">
-            <h1 class="text-2xl font-bold">Prompt Tool tạo ảnh đồ thị</h1>
-            <a href="/" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 transition">Về trang chính</a>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-white rounded-xl border border-slate-200 p-4">
-                <label class="block text-sm font-semibold mb-1">Loại đồ thị</label>
-                <select id="graphType" class="w-full border border-slate-300 rounded-lg px-3 py-2">
-                    <option value="undirected">Vô hướng</option>
-                    <option value="directed">Có hướng</option>
-                </select>
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200 p-4">
-                <label class="block text-sm font-semibold mb-1">Số node</label>
-                <input id="nodeCount" type="number" min="3" max="30" value="7" class="w-full border border-slate-300 rounded-lg px-3 py-2">
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200 p-4">
-                <label class="block text-sm font-semibold mb-1">Số cạnh</label>
-                <input id="edgeCount" type="number" min="1" max="200" value="10" class="w-full border border-slate-300 rounded-lg px-3 py-2">
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200 p-4">
-                <label class="block text-sm font-semibold mb-1">Nhãn node bắt đầu từ</label>
-                <input id="startLabel" type="text" value="A" maxlength="1" class="w-full border border-slate-300 rounded-lg px-3 py-2 uppercase">
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200 p-4">
-                <label class="block text-sm font-semibold mb-1">Khoảng trọng số (min-max)</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <input id="weightMin" type="number" min="1" max="999" value="1" class="border border-slate-300 rounded-lg px-3 py-2">
-                    <input id="weightMax" type="number" min="1" max="999" value="25" class="border border-slate-300 rounded-lg px-3 py-2">
+<body class="bg-slate-50 min-h-screen text-slate-900 selection:bg-blue-100">
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 glass border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <span class="text-lg font-bold tracking-tight">Image<span class="text-blue-600">2</span>Graph</span>
+                    <span class="block text-[10px] text-slate-500 font-medium uppercase tracking-widest">Standards Guide</span>
                 </div>
             </div>
-            <div class="bg-white rounded-xl border border-slate-200 p-4 md:col-span-2">
-                <label class="block text-sm font-semibold mb-1">Độ phân giải</label>
-                <select id="resolution" class="w-full border border-slate-300 rounded-lg px-3 py-2">
-                    <option value="1024x1024">1024x1024</option>
-                    <option value="1536x1536" selected>1536x1536</option>
-                    <option value="2048x2048">2048x2048</option>
-                    <option value="1024x1536">1024x1536</option>
-                </select>
+            <a href="/" class="group flex items-center space-x-2 px-4 py-2 rounded-full bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-all shadow-md">
+                <span>Về trang chủ</span>
+                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Hero Section -->
+        <header class="text-center mb-16">
+            <h1 class="text-4xl sm:text-5xl font-extrabold mb-4 tracking-tight">
+                Chuẩn Hình Ảnh <span class="gradient-text">Tối Ưu</span>
+            </h1>
+            <p class="text-slate-600 max-w-2xl mx-auto text-lg leading-relaxed">
+                Để thuật toán nhận diện đạt độ chính xác cao nhất, hãy đảm bảo hình ảnh đầu vào tuân thủ các quy tắc kỹ thuật dưới đây.
+            </p>
+        </header>
+
+
+        <!-- Standards Grid -->
+        <section class="mb-20">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <span class="w-2 h-8 bg-purple-600 rounded-full mr-3"></span>
+                    Quy Tắc Kỹ Thuật
+                </h2>
             </div>
-            <div class="bg-white rounded-xl border border-slate-200 p-4">
-                <label class="block text-sm font-semibold mb-1">Số prompt batch</label>
-                <input id="batchCount" type="number" min="1" max="30" value="5" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Card 1 -->
+                <div class="standard-card bg-white p-8 rounded-3xl border border-slate-200 flex flex-col items-start">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 1v4m0 0h-4m4 0l-5-5"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-xl mb-3">Kích Thước & File</h3>
+                    <ul class="text-slate-600 space-y-2 text-sm">
+                        <li class="flex items-start"><svg class="w-4 h-4 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Định dạng .png hoặc .jpg</li>
+                        <li class="flex items-start"><svg class="w-4 h-4 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Rộng từ 1000px đến 2500px</li>
+                        <li class="flex items-start"><svg class="w-4 h-4 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Độ tương phản cao, nền sáng</li>
+                    </ul>
+                </div>
+                <!-- Card 2 -->
+                <div class="standard-card bg-white p-8 rounded-3xl border border-slate-200 flex flex-col items-start">
+                    <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-xl mb-3">Đỉnh & Cạnh</h3>
+                    <ul class="text-slate-600 space-y-2 text-sm">
+                        <li class="flex items-start"><svg class="w-4 h-4 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Đỉnh hình tròn, bán kính 15-60px</li>
+                        <li class="flex items-start"><svg class="w-4 h-4 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Cạnh thẳng, không đứt quá 20px</li>
+                        <li class="flex items-start"><svg class="w-4 h-4 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Khoảng cách tâm các đỉnh > 30px</li>
+                    </ul>
+                </div>
+                <!-- Card 3 -->
+                <div class="standard-card bg-white p-8 rounded-3xl border border-slate-200 flex flex-col items-start">
+                    <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-xl mb-3">Lưu Ý Quan Trọng</h3>
+                    <ul class="text-slate-600 space-y-2 text-sm">
+                        <li class="flex items-start"><svg class="w-4 h-4 text-red-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>Không sử dụng nền có dòng kẻ/ô ly</li>
+                        <li class="flex items-start"><svg class="w-4 h-4 text-red-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>Tránh chữ viết tay dính nét</li>
+                        <li class="flex items-start"><svg class="w-4 h-4 text-red-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>Không để nhãn đè lên đường kẻ</li>
+                    </ul>
+                </div>
             </div>
-        </div>
+        </section>
 
-        <div class="mt-4 bg-white rounded-xl border border-slate-200 p-4">
-            <label class="block text-sm font-semibold mb-2">Negative prompt</label>
-            <textarea id="negativePrompt" rows="4" class="w-full border border-slate-300 rounded-lg px-3 py-2">blurry, low contrast, noisy background, textured paper, hand-drawn, sketch, watermark, logo, glow, shadow, perspective view, tilted text, curved text, overlapping labels, overlapping edges, cluttered layout, gradient background</textarea>
-        </div>
-
-        <div class="mt-4 flex flex-wrap gap-2">
-            <button id="btnRandomImage" class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition">Random Ảnh Đồ Thị</button>
-            <button id="btnDownloadPng" class="px-4 py-2 rounded-lg bg-fuchsia-600 text-white hover:bg-fuchsia-700 transition">Tải PNG</button>
-            <button id="btnDownloadGraphJson" class="px-4 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 transition">Tải JSON Đồ Thị</button>
-            <button id="btnGenerate" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">Tạo Prompt</button>
-            <button id="btnGenerateBatch" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition">Tạo Batch Prompt</button>
-            <button id="btnCopy" class="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition">Copy Prompt</button>
-            <button id="btnDownload" class="px-4 py-2 rounded-lg bg-slate-700 text-white hover:bg-slate-800 transition">Tải .txt</button>
-        </div>
-
-        <div class="mt-4 bg-white rounded-xl border border-slate-200 p-4">
-            <label class="block text-sm font-semibold mb-2">Ảnh đồ thị random</label>
-            <div class="rounded-lg border border-slate-200 p-2 bg-slate-100">
-                <canvas id="graphCanvas" class="w-full max-h-[720px] bg-white rounded"></canvas>
+        <!-- Live Generator Section -->
+        <section class="mb-12">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <span class="w-2 h-8 bg-green-600 rounded-full mr-3"></span>
+                    Mô Phỏng Thực Tế (Live Generator)
+                </h2>
+                <div class="flex space-x-2">
+                    <button id="btnRandomImage" class="px-6 py-2 bg-slate-900 text-white rounded-full text-sm font-bold hover:bg-slate-800 transition shadow-lg">Refresh Đồ Thị</button>
+                    <button id="btnDownloadPng" class="px-6 py-2 bg-blue-600 text-white rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg">Tải Ảnh (.png)</button>
+                </div>
             </div>
-        </div>
 
-        <div class="mt-4 bg-white rounded-xl border border-slate-200 p-4">
-            <label class="block text-sm font-semibold mb-2">Prompt output</label>
-            <textarea id="promptOutput" rows="14" class="w-full border border-slate-300 rounded-lg px-3 py-2 font-mono text-sm"></textarea>
-        </div>
-    </div>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <!-- Settings Panel -->
+                <div class="lg:col-span-1 space-y-4">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Loại đồ thị</label>
+                        <select id="graphType" class="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="undirected">Vô hướng</option>
+                            <option value="directed">Có hướng</option>
+                        </select>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Màu sắc Đỉnh (Chuẩn thuật toán)</label>
+                        <div id="colorOptions" class="flex flex-wrap gap-3">
+                            <button data-color="#FFFFFF" class="w-8 h-8 rounded-full border border-slate-300 bg-white ring-2 ring-blue-600 ring-offset-2 transition-all"></button>
+                            <button data-color="#EF4444" class="w-8 h-8 rounded-full border border-slate-300 bg-red-500 hover:ring-2 hover:ring-red-400 hover:ring-offset-2 transition-all"></button>
+                            <button data-color="#FBBF24" class="w-8 h-8 rounded-full border border-slate-300 bg-amber-400 hover:ring-2 hover:ring-amber-300 hover:ring-offset-2 transition-all"></button>
+                            <button data-color="#22C55E" class="w-8 h-8 rounded-full border border-slate-300 bg-green-500 hover:ring-2 hover:ring-green-300 hover:ring-offset-2 transition-all"></button>
+                            <button data-color="#3B82F6" class="w-8 h-8 rounded-full border border-slate-300 bg-blue-500 hover:ring-2 hover:ring-blue-300 hover:ring-offset-2 transition-all"></button>
+                            <button data-color="#A855F7" class="w-8 h-8 rounded-full border border-slate-300 bg-purple-500 hover:ring-2 hover:ring-purple-300 hover:ring-offset-2 transition-all"></button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-2 italic font-medium">* Các màu này nằm trong dải HSV mà thuật toán lọc được.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Số lượng Đỉnh</label>
+                        <input id="nodeCount" type="range" min="2" max="15" value="7" class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        <div class="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
+                            <span>2</span>
+                            <span id="nodeCountDisplay">7 Nodes</span>
+                            <span>15</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Số lượng Cạnh</label>
+                        <input id="edgeCount" type="range" min="1" max="30" value="10" class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-purple-600">
+                        <div class="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
+                            <span>1</span>
+                            <span id="edgeCountDisplay">10 Edges</span>
+                            <span>30</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Độ phân giải</label>
+                        <select id="resolution" class="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-semibold outline-none">
+                            <option value="1000x1000">1000 x 1000</option>
+                            <option value="1500x1500" selected>1500 x 1500</option>
+                            <option value="2000x2000">2000 x 2000</option>
+                        </select>
+                    </div>
+                </div>
 
+                <!-- Canvas Preview -->
+                <div class="lg:col-span-3 space-y-6">
+                    <div class="bg-white rounded-3xl border border-slate-200 p-4 shadow-sm overflow-hidden flex items-center justify-center min-h-[500px]">
+                        <canvas id="graphCanvas" class="max-w-full max-h-[600px] border border-slate-100 rounded-2xl"></canvas>
+                    </div>
+
+                    <!-- Prompt Output Area -->
+                    <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-lg flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                Diễn giải Prompt (AI Generation)
+                            </h3>
+                            <button id="btnCopyPrompt" class="flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-xs font-bold hover:bg-blue-100 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-0 10l5 5m0-5l-5 5"></path>
+                                </svg>
+                                <span>Sao chép Prompt</span>
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <textarea id="promptOutput" readonly class="w-full h-32 bg-slate-50 border-none rounded-2xl p-6 text-sm font-medium text-slate-600 leading-relaxed outline-none resize-none" placeholder="Prompt sẽ xuất hiện tại đây..."></textarea>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-4 italic">* Đoạn văn bản này dùng để mô tả chính xác đồ thị trên cho các công cụ AI tạo ảnh (DALL-E, Midjourney...).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="border-t border-slate-200 py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-slate-400 text-sm">&copy; 2026 Image2Graph Project. Phục vụ mục đích nghiên cứu và chuẩn hóa dữ liệu.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
     <script>
         const graphType = document.getElementById('graphType');
         const nodeCount = document.getElementById('nodeCount');
+        const nodeCountDisplay = document.getElementById('nodeCountDisplay');
         const edgeCount = document.getElementById('edgeCount');
-        const startLabel = document.getElementById('startLabel');
-        const weightMin = document.getElementById('weightMin');
-        const weightMax = document.getElementById('weightMax');
+        const edgeCountDisplay = document.getElementById('edgeCountDisplay');
         const resolution = document.getElementById('resolution');
-        const batchCount = document.getElementById('batchCount');
-        const negativePrompt = document.getElementById('negativePrompt');
-        const promptOutput = document.getElementById('promptOutput');
-        const btnGenerate = document.getElementById('btnGenerate');
-        const btnGenerateBatch = document.getElementById('btnGenerateBatch');
-        const btnCopy = document.getElementById('btnCopy');
-        const btnDownload = document.getElementById('btnDownload');
         const btnRandomImage = document.getElementById('btnRandomImage');
         const btnDownloadPng = document.getElementById('btnDownloadPng');
-        const btnDownloadGraphJson = document.getElementById('btnDownloadGraphJson');
+        const btnCopyPrompt = document.getElementById('btnCopyPrompt');
+        const promptOutput = document.getElementById('promptOutput');
+        const colorOptions = document.getElementById('colorOptions');
         const graphCanvas = document.getElementById('graphCanvas');
         const ctx = graphCanvas.getContext('2d');
+        
         let currentGraph = null;
+        let selectedNodeColor = '#FFFFFF';
+
+        // Color selection logic
+        colorOptions.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                colorOptions.querySelectorAll('button').forEach(b => b.classList.remove('ring-2', 'ring-blue-600', 'ring-offset-2'));
+                btn.classList.add('ring-2', 'ring-blue-600', 'ring-offset-2');
+                selectedNodeColor = btn.dataset.color;
+                generateGraph();
+            });
+        });
+
+        function updateDisplay() {
+            nodeCountDisplay.textContent = `${nodeCount.value} Nodes`;
+            edgeCountDisplay.textContent = `${edgeCount.value} Edges`;
+        }
 
         function parseResolution() {
             const [w, h] = resolution.value.split('x').map(Number);
-            return { w: w || 1536, h: h || 1536 };
+            return { w, h };
         }
 
-        function shuffleArray(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        }
-
-        function buildNodeName(index, start) {
-            const base = (start || 'A').toUpperCase().charCodeAt(0);
-            return String.fromCharCode(((base - 65 + index) % 26) + 65);
-        }
-
-        function randomInt(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
+        function buildNodeName(index) {
+            return String.fromCharCode(65 + (index % 26));
         }
 
         function createNodePositions(n, w, h) {
             const nodes = [];
             const cx = w / 2;
             const cy = h / 2;
-            const radius = Math.min(w, h) * 0.34;
+            const radius = Math.min(w, h) * 0.35;
             for (let i = 0; i < n; i++) {
-                const angle = (Math.PI * 2 * i) / n + (Math.random() * 0.2 - 0.1);
-                const rJitter = radius * (0.92 + Math.random() * 0.16);
+                const angle = (Math.PI * 2 * i) / n;
+                const rJitter = radius * (0.95 + Math.random() * 0.1);
                 nodes.push({
                     x: cx + Math.cos(angle) * rJitter,
                     y: cy + Math.sin(angle) * rJitter
@@ -144,57 +278,75 @@
         }
 
         function generateGraph() {
-            const n = Math.max(3, Math.min(30, Number(nodeCount.value) || 7));
-            const minW = Math.max(1, Number(weightMin.value) || 1);
-            const maxW = Math.max(minW, Number(weightMax.value) || 25);
+            const n = parseInt(nodeCount.value);
             const { w, h } = parseResolution();
             const directed = graphType.value === 'directed';
-            const maxEdges = directed ? n * (n - 1) : (n * (n - 1)) / 2;
-            const m = Math.max(1, Math.min(maxEdges, Number(edgeCount.value) || n + 2));
-            edgeCount.value = m;
+            
+            const maxPosEdges = directed ? n * (n - 1) : (n * (n - 1)) / 2;
+            let m = parseInt(edgeCount.value);
+            if (m > maxPosEdges) {
+                m = maxPosEdges;
+                edgeCount.value = m;
+                updateDisplay();
+            }
 
             const labels = [];
-            for (let i = 0; i < n; i++) labels.push(buildNodeName(i, startLabel.value));
+            for (let i = 0; i < n; i++) labels.push(buildNodeName(i));
             const pos = createNodePositions(n, w, h);
 
-            const allPairs = [];
-            for (let i = 0; i < n; i++) {
-                for (let j = 0; j < n; j++) {
-                    if (i === j) continue;
-                    if (!directed && j <= i) continue;
-                    allPairs.push([i, j]);
+            const edges = [];
+            const used = new Set();
+            for (let i = 0; i < m; i++) {
+                let f = Math.floor(Math.random() * n);
+                let t = Math.floor(Math.random() * n);
+                const key = directed ? `${f}-${t}` : [f, t].sort().join('-');
+                if (f !== t && !used.has(key)) {
+                    used.add(key);
+                    edges.push({ from: f, to: t, weight: Math.floor(Math.random() * 20) + 1 });
                 }
             }
-            shuffleArray(allPairs);
-            const chosen = allPairs.slice(0, m);
-
-            const edges = chosen.map(([from, to]) => ({
-                from,
-                to,
-                weight: randomInt(minW, maxW)
-            }));
 
             currentGraph = {
                 directed,
                 width: w,
                 height: h,
-                nodes: labels.map((label, i) => ({
-                    id: i,
-                    label,
-                    x: pos[i].x,
-                    y: pos[i].y
-                })),
+                nodeColor: selectedNodeColor,
+                nodes: labels.map((label, i) => ({ id: i, label, x: pos[i].x, y: pos[i].y })),
                 edges
             };
             drawGraph();
+            updatePrompt();
+        }
+
+        function updatePrompt() {
+            if (!currentGraph) return;
+            const { directed, nodes, edges, nodeColor } = currentGraph;
+            const colorName = {
+                '#FFFFFF': 'White nodes with black outlines',
+                '#EF4444': 'Bright Red nodes',
+                '#FBBF24': 'Amber/Yellow nodes',
+                '#22C55E': 'Vivid Green nodes',
+                '#3B82F6': 'Royal Blue nodes',
+                '#A855F7': 'Deep Purple nodes'
+            }[nodeColor] || 'White nodes';
+
+            let prompt = `A professional graph diagram on a pure white background. `;
+            prompt += `Technical requirements: High contrast, razor sharp lines, no blur, no shadows. `;
+            prompt += `Graph structure: ${nodes.length} circular nodes, labeled A to ${nodes[nodes.length-1].label}. `;
+            prompt += `Node style: ${colorName}, radius approx 40px, thick black borders. Label text is perfectly centered and bold. `;
+            prompt += `Edges: ${edges.length} ${directed ? 'directed lines with clear arrowheads' : 'straight solid lines'}, pure black, 3px thickness. `;
+            prompt += `Weights: Clean numerical digits placed near the midpoint of each edge, black font, clearly readable. `;
+            prompt += `Composition: Minimalist, clean workspace, scientific paper style. 1024x1024 resolution.`;
+
+            promptOutput.value = prompt;
         }
 
         function drawArrowhead(x1, y1, x2, y2, size) {
             const angle = Math.atan2(y2 - y1, x2 - x1);
             ctx.beginPath();
             ctx.moveTo(x2, y2);
-            ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 7), y2 - size * Math.sin(angle - Math.PI / 7));
-            ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 7), y2 - size * Math.sin(angle + Math.PI / 7));
+            ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 8), y2 - size * Math.sin(angle - Math.PI / 8));
+            ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 8), y2 - size * Math.sin(angle + Math.PI / 8));
             ctx.closePath();
             ctx.fill();
         }
@@ -207,217 +359,85 @@
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, width, height);
 
-            const nodeRadius = Math.max(22, Math.min(34, Math.floor(Math.min(width, height) / 24)));
-
-            ctx.strokeStyle = '#111827';
-            ctx.fillStyle = '#111827';
-            ctx.lineWidth = 3;
-            ctx.font = `bold ${Math.max(18, Math.floor(nodeRadius * 0.95))}px Arial`;
+            const nodeRadius = Math.floor(Math.min(width, height) / 25);
+            ctx.lineWidth = Math.max(2, Math.floor(width / 500));
+            ctx.font = `bold ${Math.floor(nodeRadius * 1.1)}px Inter, Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const labelBoxes = [];
 
-            function isOverlapping(a, b) {
-                return !(
-                    a.x + a.w < b.x ||
-                    b.x + b.w < a.x ||
-                    a.y + a.h < b.y ||
-                    b.y + b.h < a.y
-                );
-            }
-
-            function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
-                const dx = x2 - x1;
-                const dy = y2 - y1;
-                if (dx === 0 && dy === 0) return Math.hypot(px - x1, py - y1);
-                let t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy);
-                t = Math.max(0, Math.min(1, t));
-                const nx = x1 + t * dx;
-                const ny = y1 + t * dy;
-                return Math.hypot(px - nx, py - ny);
-            }
-
-            edges.forEach((e, idx) => {
+            // Draw Edges
+            edges.forEach(e => {
                 const a = nodes[e.from];
                 const b = nodes[e.to];
-                const dx = b.x - a.x;
-                const dy = b.y - a.y;
-                const d = Math.hypot(dx, dy) || 1;
-                const ux = dx / d;
-                const uy = dy / d;
+                const d = Math.hypot(b.x - a.x, b.y - a.y);
+                const ux = (b.x - a.x) / d;
+                const uy = (b.y - a.y) / d;
+                
                 const sx = a.x + ux * nodeRadius;
                 const sy = a.y + uy * nodeRadius;
                 const ex = b.x - ux * nodeRadius;
                 const ey = b.y - uy * nodeRadius;
 
+                ctx.strokeStyle = '#000000';
                 ctx.beginPath();
                 ctx.moveTo(sx, sy);
                 ctx.lineTo(ex, ey);
                 ctx.stroke();
 
                 if (directed) {
-                    drawArrowhead(sx, sy, ex, ey, 14);
+                    ctx.fillStyle = '#000000';
+                    drawArrowhead(sx, sy, ex, ey, nodeRadius * 0.5);
                 }
 
-                const mx = (sx + ex) / 2;
-                const my = (sy + ey) / 2;
-                const perpX = -uy;
-                const perpY = ux;
-                const t = String(e.weight);
-                const tw = ctx.measureText(t).width + 16;
-                const th = 26;
-                let placed = null;
-                const baseSign = idx % 2 === 0 ? 1 : -1;
-
-                for (let step = 0; step < 18; step++) {
-                    const sign = step % 2 === 0 ? baseSign : -baseSign;
-                    const offset = 28 + Math.floor(step / 2) * 10;
-                    const tx = mx + perpX * sign * offset;
-                    const ty = my + perpY * sign * offset;
-                    const box = { x: tx - tw / 2 - 2, y: ty - th / 2 - 1, w: tw + 4, h: th + 2, tx, ty };
-                    const hit = labelBoxes.some((b2) => isOverlapping(box, b2));
-                    const edgeHit = edges.some((eo, eoIdx) => {
-                        if (eoIdx === idx) return false;
-                        const na = nodes[eo.from];
-                        const nb = nodes[eo.to];
-                        const ddx = nb.x - na.x;
-                        const ddy = nb.y - na.y;
-                        const dd = Math.hypot(ddx, ddy) || 1;
-                        const uux = ddx / dd;
-                        const uuy = ddy / dd;
-                        const osx = na.x + uux * nodeRadius;
-                        const osy = na.y + uuy * nodeRadius;
-                        const oex = nb.x - uux * nodeRadius;
-                        const oey = nb.y - uuy * nodeRadius;
-                        return pointToSegmentDistance(tx, ty, osx, osy, oex, oey) < 20;
-                    });
-                    if (!hit && !edgeHit) {
-                        placed = box;
-                        break;
-                    }
-                }
-
-                if (!placed) {
-                    const tx = mx + perpX * baseSign * 60;
-                    const ty = my + perpY * baseSign * 60;
-                    placed = { x: tx - tw / 2 - 2, y: ty - th / 2 - 1, w: tw + 4, h: th + 2, tx, ty };
-                }
-                labelBoxes.push(placed);
-
-                ctx.fillStyle = '#111827';
-                ctx.fillText(t, placed.tx, placed.ty);
-                ctx.fillStyle = '#111827';
+                // Weights
+                const mx = (sx + ex) / 2 + (-uy * nodeRadius * 0.8);
+                const my = (sy + ey) / 2 + (ux * nodeRadius * 0.8);
+                ctx.fillStyle = '#000000';
+                ctx.font = `bold ${Math.floor(nodeRadius * 0.9)}px Inter, Arial`;
+                ctx.fillText(e.weight, mx, my);
             });
 
-            nodes.forEach((n) => {
-                ctx.fillStyle = '#ffffff';
+            // Draw Nodes
+            nodes.forEach(n => {
+                ctx.fillStyle = currentGraph.nodeColor || '#ffffff';
                 ctx.beginPath();
                 ctx.arc(n.x, n.y, nodeRadius, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.strokeStyle = '#111827';
-                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#000000';
                 ctx.stroke();
-                ctx.fillStyle = '#111827';
+
+                // Contrast color for label
+                const isDark = ['#EF4444', '#3B82F6', '#A855F7'].includes(currentGraph.nodeColor);
+                ctx.fillStyle = isDark ? '#ffffff' : '#000000';
+                
+                ctx.font = `bold ${Math.floor(nodeRadius * 1.1)}px Inter, Arial`;
                 ctx.fillText(n.label, n.x, n.y);
             });
         }
 
-        function buildLabels(start, count) {
-            const base = (start || 'A').toUpperCase().charCodeAt(0);
-            const labels = [];
-            for (let i = 0; i < count; i++) {
-                labels.push(String.fromCharCode(((base - 65 + i) % 26) + 65));
-            }
-            return labels.join(', ');
-        }
-
-        function onePrompt(seed) {
-            const n = Math.max(3, Math.min(30, Number(nodeCount.value) || 7));
-            const maxEdges = graphType.value === 'directed' ? n * (n - 1) : (n * (n - 1)) / 2;
-            const m = Math.max(1, Math.min(maxEdges, Number(edgeCount.value) || n + 2));
-            const minW = Math.max(1, Number(weightMin.value) || 1);
-            const maxW = Math.max(minW, Number(weightMax.value) || 25);
-            const typeText = graphType.value === 'directed' ? 'directed weighted graph' : 'undirected weighted graph';
-            const lineType = graphType.value === 'directed' ? 'Directed edges with clear arrowheads, straight lines only.' : 'Straight edges only, medium thickness, no broken lines.';
-            const extra = graphType.value === 'directed' ? 'Keep arrowheads visible and not touching labels.' : 'Keep layout balanced with enough spacing between nodes.';
-            const labels = buildLabels(startLabel.value, n);
-            const seedLine = seed ? `Layout seed: ${seed}.` : '';
-
-            return `Create a clean 2D ${typeText} for computer vision OCR.
-White plain background, high contrast, no texture.
-${n} circular nodes with black outlines, evenly spaced.
-Node labels: ${labels} (uppercase, centered, sans-serif, sharp).
-Use approximately ${m} edges.
-${lineType}
-Add integer edge weights (${minW}-${maxW}) near edge midpoints, outside nodes.
-No overlap between labels, weights, edges, or nodes.
-${extra}
-No blur, no shadow, no watermark, no handwritten style, no perspective distortion.
-Technical textbook style, sharp lines, ${resolution.value} resolution.
-${seedLine}
-
-Negative prompt:
-${negativePrompt.value}`.trim();
-        }
-
-        function generateSingle() {
-            promptOutput.value = onePrompt('');
-        }
-
-        function generateBatch() {
-            const count = Math.max(1, Math.min(30, Number(batchCount.value) || 5));
-            const blocks = [];
-            for (let i = 1; i <= count; i++) {
-                blocks.push(`### PROMPT ${i}\n${onePrompt(i)}`);
-            }
-            promptOutput.value = blocks.join('\n\n');
-        }
-
-        btnGenerate.addEventListener('click', generateSingle);
-        btnGenerateBatch.addEventListener('click', generateBatch);
+        nodeCount.addEventListener('input', () => { updateDisplay(); generateGraph(); });
+        edgeCount.addEventListener('input', () => { updateDisplay(); generateGraph(); });
+        graphType.addEventListener('change', generateGraph);
+        resolution.addEventListener('change', generateGraph);
         btnRandomImage.addEventListener('click', generateGraph);
-        btnCopy.addEventListener('click', async () => {
-            await navigator.clipboard.writeText(promptOutput.value || '');
-            btnCopy.textContent = 'Đã copy';
-            setTimeout(() => { btnCopy.textContent = 'Copy Prompt'; }, 1200);
-        });
-        btnDownload.addEventListener('click', () => {
-            const blob = new Blob([promptOutput.value || ''], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'graph_image_prompt.txt';
-            a.click();
-            URL.revokeObjectURL(url);
-        });
         btnDownloadPng.addEventListener('click', () => {
-            if (!currentGraph) generateGraph();
-            const a = document.createElement('a');
-            a.href = graphCanvas.toDataURL('image/png');
-            a.download = 'random_graph.png';
-            a.click();
-        });
-        btnDownloadGraphJson.addEventListener('click', () => {
-            if (!currentGraph) generateGraph();
-            const data = {
-                directed: currentGraph.directed,
-                nodes: currentGraph.nodes.map(n => ({ id: n.id, label: n.label })),
-                edges: currentGraph.edges.map(e => ({
-                    from: currentGraph.nodes[e.from].label,
-                    to: currentGraph.nodes[e.to].label,
-                    weight: e.weight
-                }))
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'random_graph.json';
-            a.click();
-            URL.revokeObjectURL(url);
+            const link = document.createElement('a');
+            link.download = 'standard_graph.png';
+            link.href = graphCanvas.toDataURL('image/png');
+            link.click();
         });
 
-        generateSingle();
+        btnCopyPrompt.addEventListener('click', () => {
+            promptOutput.select();
+            document.execCommand('copy');
+            const originalText = btnCopyPrompt.querySelector('span').textContent;
+            btnCopyPrompt.querySelector('span').textContent = 'Đã sao chép!';
+            setTimeout(() => {
+                btnCopyPrompt.querySelector('span').textContent = originalText;
+            }, 2000);
+        });
+
+        updateDisplay();
         generateGraph();
     </script>
 </body>

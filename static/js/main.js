@@ -12,16 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Result elements
     const textOutput = document.getElementById('text-output');
     const jsonOutput = document.getElementById('json-output');
-    const tabVisual = document.getElementById('tab-visual');
-    const tabText = document.getElementById('tab-text');
-    const tabJson = document.getElementById('tab-json');
-    const contentVisual = document.getElementById('content-visual');
-    const contentText = document.getElementById('content-text');
-    const contentJson = document.getElementById('content-json');
     const downloadJsonBtn = document.getElementById('download-json');
     const shareBtn = document.getElementById('share-btn');
     const noResultVisual = document.getElementById('no-result-visual');
-    const mynetwork = document.getElementById('mynetwork');
+    const resultImg = document.getElementById('result-img');
+    const resultImgContainer = document.getElementById('result-img-container');
 
     // Auth elements
     const authModal = document.getElementById('auth-modal');
@@ -40,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentFile = null;
     let resultData = null;
     let isRegisterMode = false;
-    let network = null;
 
     // Check Auth on load
     async function checkAuth() {
@@ -258,15 +252,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         textOutput.innerHTML = html;
 
-        try {
+        // Always try to show the algorithm visual if available
+        if (imgPath) {
+            resultImg.src = imgPath;
+            resultImg.classList.remove('hidden');
             noResultVisual.classList.add('hidden');
-            mynetwork.classList.remove('hidden');
-            renderInteractiveGraph({ nodes, edges });
-        } catch (err) {
+        } else {
+            resultImg.classList.add('hidden');
             noResultVisual.classList.remove('hidden');
-            mynetwork.classList.add('hidden');
-            noResultVisual.innerHTML = `<p>Không thể hiển thị đồ thị trực quan. Bạn vẫn có thể xem Diễn Giải/JSON.</p>`;
-            log(`Lỗi hiển thị trực quan: ${err.message}`, 'error');
         }
 
         // Render JSON
@@ -290,8 +283,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             shareBtn.disabled = true;
         }
-
-        switchTab('visual');
     }
 
     function updateShareBtnUI(isPublic, isOwner) {
@@ -310,60 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderInteractiveGraph(data) {
-        if (!window.vis) {
-            throw new Error('Thiếu thư viện vis-network');
-        }
-        const visNodes = new window.vis.DataSet(data.nodes.map(n => ({
-            id: n.label,
-            label: n.label,
-            color: { background: '#DBEAFE', border: '#2563EB' },
-            font: { color: '#1E40AF', weight: 'bold' }
-        })));
 
-        const visEdges = new window.vis.DataSet(data.edges.map(e => ({
-            from: e.from,
-            to: e.to,
-            label: e.weight ? String(e.weight) : '',
-            arrows: 'to',
-            color: { color: '#94A3B8', highlight: '#2563EB' },
-            font: { align: 'top', color: '#059669', strokeWidth: 0 }
-        })));
-
-        const container = document.getElementById('mynetwork');
-        const visData = { nodes: visNodes, edges: visEdges };
-        const options = {
-            physics: {
-                enabled: true,
-                barnesHut: { gravitationalConstant: -2000, centralGravity: 0.3, springLength: 150 }
-            },
-            interaction: { hover: true }
-        };
-        
-        if (network) network.destroy();
-        network = new window.vis.Network(container, visData, options);
-    }
-
-    function switchTab(tabId) {
-        const tabs = {
-            'visual': { btn: tabVisual, content: contentVisual },
-            'text': { btn: tabText, content: contentText },
-            'json': { btn: tabJson, content: contentJson }
-        };
-
-        Object.keys(tabs).forEach(id => {
-            const isSelected = id === tabId;
-            tabs[id].btn.className = isSelected 
-                ? 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 bg-white'
-                : 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-            tabs[id].content.classList.toggle('active', isSelected);
-            tabs[id].content.classList.toggle('hidden', !isSelected);
-        });
-    }
-
-    tabVisual.addEventListener('click', () => switchTab('visual'));
-    tabText.addEventListener('click', () => switchTab('text'));
-    tabJson.addEventListener('click', () => switchTab('json'));
 
     downloadJsonBtn.addEventListener('click', () => {
         if (!resultData) return;

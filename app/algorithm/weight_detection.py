@@ -49,7 +49,7 @@ def detect_weights(img: np.ndarray, gray: np.ndarray, img_vis: np.ndarray,
     text_components = cv2.morphologyEx(text_components, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
 
     # 3. Find contours
-    cnts, _ = cv2.findContours(text_components, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts, _ = cv2.findContours(text_components, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
     candidates = []
     for cnt in cnts:
@@ -61,7 +61,7 @@ def detect_weights(img: np.ndarray, gray: np.ndarray, img_vis: np.ndarray,
                 'center': (x + w // 2, y + h // 2)
             })
 
-    merged = _merge_close_boxes(candidates, distance_th=35)
+    merged = _merge_close_boxes(candidates, distance_th=45)
 
     # 4. OCR từng vùng
     whitelist = "-c tessedit_char_whitelist=0123456789"
