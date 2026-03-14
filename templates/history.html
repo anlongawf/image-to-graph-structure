@@ -1,91 +1,40 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lịch Sử Phân Tích Đồ Thị</title>
+    <title>Lịch Sử Phân Tích - Image2Graph</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/css/style.css">
-    <style>
-        body {
-            background: #f4f6f9;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .history-container {
-            max-width: 900px;
-            margin: 40px auto;
-            background: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .history-item {
-            padding: 15px;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-            background: #fff;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .history-imgs {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .page-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .btn-back {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #007bff;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .btn-back:hover {
-            text-decoration: underline;
-        }
-    </style>
 </head>
-
-<body>
-    <header class="header">
-        <div>
-            <h1>Chuyển đồ thị từ ảnh sang dạng ngôn ngữ có cấu trúc.</h1>
-        </div>
-        <div class="user-controls">
-            <span id="user-greeting" style="display: inline-block; margin-right: 15px; font-weight: bold;"></span>
-            <button id="btn-logout" class="btn-secondary" style="margin-top:0;">Đăng Xuất</button>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <a href="/" class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">G</div>
+                <h1 class="text-xl font-bold text-gray-900">Image2Graph</h1>
+            </a>
+            <div class="flex items-center space-x-4">
+                <span id="user-greeting" class="text-sm font-medium text-gray-700"></span>
+                <button id="btn-logout" class="text-sm font-medium text-red-600 hover:text-red-700 transition-colors">Đăng Xuất</button>
+            </div>
         </div>
     </header>
-
-    <main class="main-container">
-        <section class="history-container">
-            <a href="/" class="btn-back">⬅ Quay lại màn hình chính</a>
-            <h2 class="panel-title"
-                style="margin-bottom: 20px; text-align: center; font-size: 1.8rem; border-bottom: none;">Các Graph Đã
-                Được Phân Tích Của Bạn</h2>
-
-            <div id="error-msg" style="color: red; margin-bottom: 10px; text-align: center;"></div>
-
-            <ul id="history-list" style="list-style: none; padding: 0;">
-                <li style="text-align: center; padding: 20px;">Đang tải dữ liệu Lịch sử...</li>
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="mb-8 flex items-center justify-between">
+            <div>
+                <h2 class="text-3xl font-extrabold text-gray-900">Lịch Sử Phân Tích</h2>
+                <p class="mt-2 text-sm text-gray-600">Danh sách các đồ thị bạn đã xử lý trước đây.</p>
+            </div>
+            <a href="/" class="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center transition-colors">Quay lại</a>
+        </div>
+        <div id="error-msg" class="hidden bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm border border-red-100"></div>
+        <div class="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
+            <ul id="history-list" class="divide-y divide-gray-200">
+                <li class="p-12 text-center text-gray-500">Đang tải dữ liệu...</li>
             </ul>
-        </section>
+        </div>
     </main>
-
-    <script src="/static/js/history.js"></script>
+    <script src="/static/js/history.js?v=20260314"></script>
 </body>
-
 </html>

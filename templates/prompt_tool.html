@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Tool - Tạo Prompt Ảnh Đồ Thị</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900">
+    <div class="max-w-5xl mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold">Prompt Tool tạo ảnh đồ thị</h1>
+            <a href="/" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 transition">Về trang chính</a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <label class="block text-sm font-semibold mb-1">Loại đồ thị</label>
+                <select id="graphType" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                    <option value="undirected">Vô hướng</option>
+                    <option value="directed">Có hướng</option>
+                </select>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <label class="block text-sm font-semibold mb-1">Số node</label>
+                <input id="nodeCount" type="number" min="3" max="30" value="7" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <label class="block text-sm font-semibold mb-1">Số cạnh</label>
+                <input id="edgeCount" type="number" min="1" max="200" value="10" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <label class="block text-sm font-semibold mb-1">Nhãn node bắt đầu từ</label>
+                <input id="startLabel" type="text" value="A" maxlength="1" class="w-full border border-slate-300 rounded-lg px-3 py-2 uppercase">
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <label class="block text-sm font-semibold mb-1">Khoảng trọng số (min-max)</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <input id="weightMin" type="number" min="1" max="999" value="1" class="border border-slate-300 rounded-lg px-3 py-2">
+                    <input id="weightMax" type="number" min="1" max="999" value="25" class="border border-slate-300 rounded-lg px-3 py-2">
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4 md:col-span-2">
+                <label class="block text-sm font-semibold mb-1">Độ phân giải</label>
+                <select id="resolution" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                    <option value="1024x1024">1024x1024</option>
+                    <option value="1536x1536" selected>1536x1536</option>
+                    <option value="2048x2048">2048x2048</option>
+                    <option value="1024x1536">1024x1536</option>
+                </select>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+                <label class="block text-sm font-semibold mb-1">Số prompt batch</label>
+                <input id="batchCount" type="number" min="1" max="30" value="5" class="w-full border border-slate-300 rounded-lg px-3 py-2">
+            </div>
+        </div>
+
+        <div class="mt-4 bg-white rounded-xl border border-slate-200 p-4">
+            <label class="block text-sm font-semibold mb-2">Negative prompt</label>
+            <textarea id="negativePrompt" rows="4" class="w-full border border-slate-300 rounded-lg px-3 py-2">blurry, low contrast, noisy background, textured paper, hand-drawn, sketch, watermark, logo, glow, shadow, perspective view, tilted text, curved text, overlapping labels, overlapping edges, cluttered layout, gradient background</textarea>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+            <button id="btnRandomImage" class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition">Random Ảnh Đồ Thị</button>
+            <button id="btnDownloadPng" class="px-4 py-2 rounded-lg bg-fuchsia-600 text-white hover:bg-fuchsia-700 transition">Tải PNG</button>
+            <button id="btnDownloadGraphJson" class="px-4 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 transition">Tải JSON Đồ Thị</button>
+            <button id="btnGenerate" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">Tạo Prompt</button>
+            <button id="btnGenerateBatch" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition">Tạo Batch Prompt</button>
+            <button id="btnCopy" class="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition">Copy Prompt</button>
+            <button id="btnDownload" class="px-4 py-2 rounded-lg bg-slate-700 text-white hover:bg-slate-800 transition">Tải .txt</button>
+        </div>
+
+        <div class="mt-4 bg-white rounded-xl border border-slate-200 p-4">
+            <label class="block text-sm font-semibold mb-2">Ảnh đồ thị random</label>
+            <div class="rounded-lg border border-slate-200 p-2 bg-slate-100">
+                <canvas id="graphCanvas" class="w-full max-h-[720px] bg-white rounded"></canvas>
+            </div>
+        </div>
+
+        <div class="mt-4 bg-white rounded-xl border border-slate-200 p-4">
+            <label class="block text-sm font-semibold mb-2">Prompt output</label>
+            <textarea id="promptOutput" rows="14" class="w-full border border-slate-300 rounded-lg px-3 py-2 font-mono text-sm"></textarea>
+        </div>
+    </div>
+
+    <script>
+        const graphType = document.getElementById('graphType');
+        const nodeCount = document.getElementById('nodeCount');
+        const edgeCount = document.getElementById('edgeCount');
+        const startLabel = document.getElementById('startLabel');
+        const weightMin = document.getElementById('weightMin');
+        const weightMax = document.getElementById('weightMax');
+        const resolution = document.getElementById('resolution');
+        const batchCount = document.getElementById('batchCount');
+        const negativePrompt = document.getElementById('negativePrompt');
+        const promptOutput = document.getElementById('promptOutput');
+        const btnGenerate = document.getElementById('btnGenerate');
+        const btnGenerateBatch = document.getElementById('btnGenerateBatch');
+        const btnCopy = document.getElementById('btnCopy');
+        const btnDownload = document.getElementById('btnDownload');
+        const btnRandomImage = document.getElementById('btnRandomImage');
+        const btnDownloadPng = document.getElementById('btnDownloadPng');
+        const btnDownloadGraphJson = document.getElementById('btnDownloadGraphJson');
+        const graphCanvas = document.getElementById('graphCanvas');
+        const ctx = graphCanvas.getContext('2d');
+        let currentGraph = null;
+
+        function parseResolution() {
+            const [w, h] = resolution.value.split('x').map(Number);
+            return { w: w || 1536, h: h || 1536 };
+        }
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function buildNodeName(index, start) {
+            const base = (start || 'A').toUpperCase().charCodeAt(0);
+            return String.fromCharCode(((base - 65 + index) % 26) + 65);
+        }
+
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function createNodePositions(n, w, h) {
+            const nodes = [];
+            const cx = w / 2;
+            const cy = h / 2;
+            const radius = Math.min(w, h) * 0.34;
+            for (let i = 0; i < n; i++) {
+                const angle = (Math.PI * 2 * i) / n + (Math.random() * 0.2 - 0.1);
+                const rJitter = radius * (0.92 + Math.random() * 0.16);
+                nodes.push({
+                    x: cx + Math.cos(angle) * rJitter,
+                    y: cy + Math.sin(angle) * rJitter
+                });
+            }
+            return nodes;
+        }
+
+        function generateGraph() {
+            const n = Math.max(3, Math.min(30, Number(nodeCount.value) || 7));
+            const minW = Math.max(1, Number(weightMin.value) || 1);
+            const maxW = Math.max(minW, Number(weightMax.value) || 25);
+            const { w, h } = parseResolution();
+            const directed = graphType.value === 'directed';
+            const maxEdges = directed ? n * (n - 1) : (n * (n - 1)) / 2;
+            const m = Math.max(1, Math.min(maxEdges, Number(edgeCount.value) || n + 2));
+            edgeCount.value = m;
+
+            const labels = [];
+            for (let i = 0; i < n; i++) labels.push(buildNodeName(i, startLabel.value));
+            const pos = createNodePositions(n, w, h);
+
+            const allPairs = [];
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    if (i === j) continue;
+                    if (!directed && j <= i) continue;
+                    allPairs.push([i, j]);
+                }
+            }
+            shuffleArray(allPairs);
+            const chosen = allPairs.slice(0, m);
+
+            const edges = chosen.map(([from, to]) => ({
+                from,
+                to,
+                weight: randomInt(minW, maxW)
+            }));
+
+            currentGraph = {
+                directed,
+                width: w,
+                height: h,
+                nodes: labels.map((label, i) => ({
+                    id: i,
+                    label,
+                    x: pos[i].x,
+                    y: pos[i].y
+                })),
+                edges
+            };
+            drawGraph();
+        }
+
+        function drawArrowhead(x1, y1, x2, y2, size) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 7), y2 - size * Math.sin(angle - Math.PI / 7));
+            ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 7), y2 - size * Math.sin(angle + Math.PI / 7));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawGraph() {
+            if (!currentGraph) return;
+            const { width, height, nodes, edges, directed } = currentGraph;
+            graphCanvas.width = width;
+            graphCanvas.height = height;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+
+            const nodeRadius = Math.max(22, Math.min(34, Math.floor(Math.min(width, height) / 24)));
+
+            ctx.strokeStyle = '#111827';
+            ctx.fillStyle = '#111827';
+            ctx.lineWidth = 3;
+            ctx.font = `bold ${Math.max(18, Math.floor(nodeRadius * 0.95))}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const labelBoxes = [];
+
+            function isOverlapping(a, b) {
+                return !(
+                    a.x + a.w < b.x ||
+                    b.x + b.w < a.x ||
+                    a.y + a.h < b.y ||
+                    b.y + b.h < a.y
+                );
+            }
+
+            function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                if (dx === 0 && dy === 0) return Math.hypot(px - x1, py - y1);
+                let t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy);
+                t = Math.max(0, Math.min(1, t));
+                const nx = x1 + t * dx;
+                const ny = y1 + t * dy;
+                return Math.hypot(px - nx, py - ny);
+            }
+
+            edges.forEach((e, idx) => {
+                const a = nodes[e.from];
+                const b = nodes[e.to];
+                const dx = b.x - a.x;
+                const dy = b.y - a.y;
+                const d = Math.hypot(dx, dy) || 1;
+                const ux = dx / d;
+                const uy = dy / d;
+                const sx = a.x + ux * nodeRadius;
+                const sy = a.y + uy * nodeRadius;
+                const ex = b.x - ux * nodeRadius;
+                const ey = b.y - uy * nodeRadius;
+
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(ex, ey);
+                ctx.stroke();
+
+                if (directed) {
+                    drawArrowhead(sx, sy, ex, ey, 14);
+                }
+
+                const mx = (sx + ex) / 2;
+                const my = (sy + ey) / 2;
+                const perpX = -uy;
+                const perpY = ux;
+                const t = String(e.weight);
+                const tw = ctx.measureText(t).width + 16;
+                const th = 26;
+                let placed = null;
+                const baseSign = idx % 2 === 0 ? 1 : -1;
+
+                for (let step = 0; step < 18; step++) {
+                    const sign = step % 2 === 0 ? baseSign : -baseSign;
+                    const offset = 28 + Math.floor(step / 2) * 10;
+                    const tx = mx + perpX * sign * offset;
+                    const ty = my + perpY * sign * offset;
+                    const box = { x: tx - tw / 2 - 2, y: ty - th / 2 - 1, w: tw + 4, h: th + 2, tx, ty };
+                    const hit = labelBoxes.some((b2) => isOverlapping(box, b2));
+                    const edgeHit = edges.some((eo, eoIdx) => {
+                        if (eoIdx === idx) return false;
+                        const na = nodes[eo.from];
+                        const nb = nodes[eo.to];
+                        const ddx = nb.x - na.x;
+                        const ddy = nb.y - na.y;
+                        const dd = Math.hypot(ddx, ddy) || 1;
+                        const uux = ddx / dd;
+                        const uuy = ddy / dd;
+                        const osx = na.x + uux * nodeRadius;
+                        const osy = na.y + uuy * nodeRadius;
+                        const oex = nb.x - uux * nodeRadius;
+                        const oey = nb.y - uuy * nodeRadius;
+                        return pointToSegmentDistance(tx, ty, osx, osy, oex, oey) < 20;
+                    });
+                    if (!hit && !edgeHit) {
+                        placed = box;
+                        break;
+                    }
+                }
+
+                if (!placed) {
+                    const tx = mx + perpX * baseSign * 60;
+                    const ty = my + perpY * baseSign * 60;
+                    placed = { x: tx - tw / 2 - 2, y: ty - th / 2 - 1, w: tw + 4, h: th + 2, tx, ty };
+                }
+                labelBoxes.push(placed);
+
+                ctx.fillStyle = '#111827';
+                ctx.fillText(t, placed.tx, placed.ty);
+                ctx.fillStyle = '#111827';
+            });
+
+            nodes.forEach((n) => {
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, nodeRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#111827';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.fillStyle = '#111827';
+                ctx.fillText(n.label, n.x, n.y);
+            });
+        }
+
+        function buildLabels(start, count) {
+            const base = (start || 'A').toUpperCase().charCodeAt(0);
+            const labels = [];
+            for (let i = 0; i < count; i++) {
+                labels.push(String.fromCharCode(((base - 65 + i) % 26) + 65));
+            }
+            return labels.join(', ');
+        }
+
+        function onePrompt(seed) {
+            const n = Math.max(3, Math.min(30, Number(nodeCount.value) || 7));
+            const maxEdges = graphType.value === 'directed' ? n * (n - 1) : (n * (n - 1)) / 2;
+            const m = Math.max(1, Math.min(maxEdges, Number(edgeCount.value) || n + 2));
+            const minW = Math.max(1, Number(weightMin.value) || 1);
+            const maxW = Math.max(minW, Number(weightMax.value) || 25);
+            const typeText = graphType.value === 'directed' ? 'directed weighted graph' : 'undirected weighted graph';
+            const lineType = graphType.value === 'directed' ? 'Directed edges with clear arrowheads, straight lines only.' : 'Straight edges only, medium thickness, no broken lines.';
+            const extra = graphType.value === 'directed' ? 'Keep arrowheads visible and not touching labels.' : 'Keep layout balanced with enough spacing between nodes.';
+            const labels = buildLabels(startLabel.value, n);
+            const seedLine = seed ? `Layout seed: ${seed}.` : '';
+
+            return `Create a clean 2D ${typeText} for computer vision OCR.
+White plain background, high contrast, no texture.
+${n} circular nodes with black outlines, evenly spaced.
+Node labels: ${labels} (uppercase, centered, sans-serif, sharp).
+Use approximately ${m} edges.
+${lineType}
+Add integer edge weights (${minW}-${maxW}) near edge midpoints, outside nodes.
+No overlap between labels, weights, edges, or nodes.
+${extra}
+No blur, no shadow, no watermark, no handwritten style, no perspective distortion.
+Technical textbook style, sharp lines, ${resolution.value} resolution.
+${seedLine}
+
+Negative prompt:
+${negativePrompt.value}`.trim();
+        }
+
+        function generateSingle() {
+            promptOutput.value = onePrompt('');
+        }
+
+        function generateBatch() {
+            const count = Math.max(1, Math.min(30, Number(batchCount.value) || 5));
+            const blocks = [];
+            for (let i = 1; i <= count; i++) {
+                blocks.push(`### PROMPT ${i}\n${onePrompt(i)}`);
+            }
+            promptOutput.value = blocks.join('\n\n');
+        }
+
+        btnGenerate.addEventListener('click', generateSingle);
+        btnGenerateBatch.addEventListener('click', generateBatch);
+        btnRandomImage.addEventListener('click', generateGraph);
+        btnCopy.addEventListener('click', async () => {
+            await navigator.clipboard.writeText(promptOutput.value || '');
+            btnCopy.textContent = 'Đã copy';
+            setTimeout(() => { btnCopy.textContent = 'Copy Prompt'; }, 1200);
+        });
+        btnDownload.addEventListener('click', () => {
+            const blob = new Blob([promptOutput.value || ''], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'graph_image_prompt.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+        btnDownloadPng.addEventListener('click', () => {
+            if (!currentGraph) generateGraph();
+            const a = document.createElement('a');
+            a.href = graphCanvas.toDataURL('image/png');
+            a.download = 'random_graph.png';
+            a.click();
+        });
+        btnDownloadGraphJson.addEventListener('click', () => {
+            if (!currentGraph) generateGraph();
+            const data = {
+                directed: currentGraph.directed,
+                nodes: currentGraph.nodes.map(n => ({ id: n.id, label: n.label })),
+                edges: currentGraph.edges.map(e => ({
+                    from: currentGraph.nodes[e.from].label,
+                    to: currentGraph.nodes[e.to].label,
+                    weight: e.weight
+                }))
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'random_graph.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        generateSingle();
+        generateGraph();
+    </script>
+</body>
+</html>

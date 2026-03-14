@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // UI Elements
     const uploadArea = document.getElementById('upload-area');
     const fileInput = document.getElementById('file-input');
     const previewContainer = document.getElementById('preview-container');
@@ -11,17 +12,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Result elements
     const textOutput = document.getElementById('text-output');
     const jsonOutput = document.getElementById('json-output');
-    const visualResultImg = document.getElementById('visual-result');
-    const resultTabText = document.getElementById('tab-text');
-    const resultTabJson = document.getElementById('tab-json');
-    const resultTabVisual = document.getElementById('tab-visual');
-
+    const tabVisual = document.getElementById('tab-visual');
+    const tabText = document.getElementById('tab-text');
+    const tabJson = document.getElementById('tab-json');
+    const contentVisual = document.getElementById('content-visual');
     const contentText = document.getElementById('content-text');
     const contentJson = document.getElementById('content-json');
-    const contentVisual = document.getElementById('content-visual');
-
     const downloadJsonBtn = document.getElementById('download-json');
     const shareBtn = document.getElementById('share-btn');
+    const noResultVisual = document.getElementById('no-result-visual');
+    const mynetwork = document.getElementById('mynetwork');
 
     // Auth elements
     const authModal = document.getElementById('auth-modal');
@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const authToggle = document.getElementById('auth-toggle');
     const authError = document.getElementById('auth-error');
     const closeBtn = document.querySelector('.close-modal');
-
     const btnLogin = document.getElementById('btn-login');
     const btnLogout = document.getElementById('btn-logout');
     const btnHistory = document.getElementById('btn-history');
@@ -41,30 +40,48 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentFile = null;
     let resultData = null;
     let isRegisterMode = false;
+    let network = null;
 
     // Check Auth on load
-    function checkAuth() {
+    async function checkAuth() {
         const token = localStorage.getItem('token');
         if (token) {
-            btnLogin.style.display = 'none';
-            btnLogout.style.display = 'inline-block';
-            btnHistory.style.display = 'inline-block';
-            // Simple username parse (for demo, real app needs /me endpoint)
-            const payloadDecoded = JSON.parse(atob(token.split('.')[1]));
-            userGreeting.textContent = `User ID: ${payloadDecoded.sub}`;
-            userGreeting.style.display = 'inline-block';
+            try {
+                const res = await fetch('/api/v1/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Token expired');
+                const user = await res.json();
+                
+                if (user) {
+                    btnLogin.classList.add('hidden');
+                    btnLogout.classList.remove('hidden');
+                    btnHistory.classList.remove('hidden');
+                    userGreeting.textContent = `Chào, ${user.email.split('@')[0]}`;
+                    userGreeting.classList.remove('hidden');
+                } else {
+                    handleLogout();
+                }
+            } catch (err) {
+                handleLogout();
+            }
         } else {
-            btnLogin.style.display = 'inline-block';
-            btnLogout.style.display = 'none';
-            btnHistory.style.display = 'none';
-            userGreeting.style.display = 'none';
+            handleLogout();
         }
     }
 
+    function handleLogout() {
+        localStorage.removeItem('token');
+        btnLogin.classList.remove('hidden');
+        btnLogout.classList.add('hidden');
+        btnHistory.classList.add('hidden');
+        userGreeting.classList.add('hidden');
+    }
+
     // Auth Modal Logic
-    btnLogin.addEventListener('click', () => { authModal.style.display = 'block'; });
-    closeBtn.addEventListener('click', () => { authModal.style.display = 'none'; });
-    window.addEventListener('click', (e) => { if (e.target == authModal) authModal.style.display = 'none'; });
+    btnLogin.addEventListener('click', () => { authModal.classList.remove('hidden'); });
+    closeBtn.addEventListener('click', () => { authModal.classList.add('hidden'); });
+    window.addEventListener('click', (e) => { if (e.target == authModal) authModal.classList.add('hidden'); });
 
     authToggle.addEventListener('click', (e) => {
         e.preventDefault();
@@ -72,13 +89,17 @@ document.addEventListener('DOMContentLoaded', () => {
         authTitle.textContent = isRegisterMode ? 'Đăng Ký' : 'Đăng Nhập';
         authSubmitBtn.textContent = isRegisterMode ? 'Đăng Ký' : 'Đăng Nhập';
         authToggle.textContent = isRegisterMode ? 'Đã có tài khoản? Đăng nhập' : 'Chưa có tài khoản? Đăng ký ngay';
-        authError.textContent = '';
+        authError.classList.add('hidden');
     });
 
     authSubmitBtn.addEventListener('click', async () => {
         const email = authEmail.value;
         const password = authPassword.value;
-        if (!email || !password) return authError.textContent = "Vui lòng nhập đủ thông tin";
+        if (!email || !password) {
+            authError.textContent = "Vui lòng nhập đủ thông tin";
+            authError.classList.remove('hidden');
+            return;
+        }
 
         try {
             const endpoint = isRegisterMode ? '/api/v1/auth/register' : '/api/v1/auth/login';
@@ -91,32 +112,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error(data.detail);
 
             localStorage.setItem('token', data.access_token);
-            authModal.style.display = 'none';
+            authModal.classList.add('hidden');
             checkAuth();
             log(`Đã đăng nhập thành công.`, 'success');
         } catch (err) {
             authError.textContent = err.message;
+            authError.classList.remove('hidden');
         }
     });
 
     btnLogout.addEventListener('click', () => {
-        localStorage.removeItem('token');
-        checkAuth();
+        handleLogout();
         log('Đã đăng xuất.');
     });
 
     function log(message, type = "info", skipTimeFormat = false) {
+        const div = document.createElement('div');
         let textContent = message;
+        
         if (!skipTimeFormat) {
             const time = new Date().toLocaleTimeString();
             textContent = `[${time}] ${message}`;
         }
 
-        const div = document.createElement('div');
         div.textContent = textContent;
-        if (type === 'error') div.style.color = 'var(--error-color)';
-        if (type === 'success') div.style.color = 'var(--success-color)';
-        if (skipTimeFormat) div.style.color = '#888'; // Custom color for algorithm logs
+        if (type === 'error') div.classList.add('text-red-400');
+        else if (type === 'success') div.classList.add('text-green-400');
+        else if (skipTimeFormat) div.classList.add('text-gray-400');
+        else div.classList.add('text-blue-400');
 
         statusLog.appendChild(div);
         statusLog.scrollTop = statusLog.scrollHeight;
@@ -125,16 +148,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Drag and drop events
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
-        uploadArea.classList.add('dragover');
+        uploadArea.classList.add('border-blue-500', 'bg-blue-50');
     });
 
     uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('dragover');
+        uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
     });
 
     uploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
-        uploadArea.classList.remove('dragover');
+        uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
         if (e.dataTransfer.files.length) {
             handleFile(e.dataTransfer.files[0]);
         }
@@ -153,10 +176,9 @@ document.addEventListener('DOMContentLoaded', () => {
     removeBtn.addEventListener('click', () => {
         currentFile = null;
         fileInput.value = '';
-        previewContainer.style.display = 'none';
-        uploadArea.style.display = 'block';
+        previewContainer.classList.add('hidden');
+        uploadArea.classList.remove('hidden');
         processBtn.disabled = true;
-        processBtn.textContent = 'Chạy Thuật Toán Nhận Diện';
         log('Đã xóa ảnh.');
     });
 
@@ -165,19 +187,13 @@ document.addEventListener('DOMContentLoaded', () => {
             log('Vui lòng chọn file hình ảnh hợp lệ (.png, .jpg)', 'error');
             return;
         }
-        if (file.size > 5 * 1024 * 1024) {
-            log('File quá lớn. Vui lòng chọn ảnh < 5MB', 'error');
-            return;
-        }
-
         currentFile = file;
         const reader = new FileReader();
         reader.onload = (e) => {
             previewImg.src = e.target.result;
-            uploadArea.style.display = 'none';
-            previewContainer.style.display = 'flex';
+            uploadArea.classList.add('hidden');
+            previewContainer.classList.remove('hidden');
             processBtn.disabled = false;
-            processBtn.textContent = 'Chạy Thuật Toán Nhận Diện';
             log(`Đã tải ảnh: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
         };
         reader.readAsDataURL(file);
@@ -187,187 +203,254 @@ document.addEventListener('DOMContentLoaded', () => {
     processBtn.addEventListener('click', async () => {
         if (!currentFile) return;
 
+        const token = localStorage.getItem('token');
+        if (!token) {
+            log('Bạn cần ĐĂNG NHẬP để chạy thuật toán.', 'error');
+            authModal.classList.remove('hidden');
+            return;
+        }
+
         const formData = new FormData();
         formData.append('file', currentFile);
 
         log('Đang gửi ảnh lên máy chủ...');
         processBtn.disabled = true;
-        spinner.style.display = 'block';
-        contentText.classList.remove('active');
-        contentJson.classList.remove('active');
-        contentVisual.classList.remove('active');
-
-        // Prepare Token
-        const token = localStorage.getItem('token');
-        if (!token) {
-            log('Bạn cần ĐĂNG NHẬP để chạy thuật toán.', 'error');
-            authModal.style.display = 'block';
-            processBtn.disabled = false;
-            spinner.style.display = 'none';
-            return;
-        }
+        spinner.classList.remove('hidden');
 
         try {
             const response = await fetch('/api/v1/extract/', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
             });
 
             const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.detail || 'Lỗi không xác định từ máy chủ');
-            }
+            if (!response.ok) throw new Error(data.detail || 'Lỗi không xác định');
 
             log(`Xử lý thành công trong ${data.execution_time_ms.toFixed(0)} ms`, 'success');
-            renderResult(data.data, data.result_image_path, data.id);
+            renderResult(data.data, data.result_image_path, { id: data.id, is_public: false, is_owner: true });
 
         } catch (error) {
             log(`Lỗi: ${error.message}`, 'error');
         } finally {
             processBtn.disabled = false;
-            spinner.style.display = 'none';
+            spinner.classList.add('hidden');
         }
     });
 
-    // --- Render logic extracted for reuse ---
-    function renderResult(data, imgPath, historyId) {
-        resultData = data;
+    function renderResult(data, imgPath, historyInfo) {
+        resultData = data || {};
+        const nodes = Array.isArray(resultData.nodes) ? resultData.nodes : [];
+        const edges = Array.isArray(resultData.edges) ? resultData.edges : [];
 
-        // Hide upload area, show preview
-        document.getElementById('upload-area').style.display = 'none';
-        previewContainer.style.display = 'flex';
-        // Note: original preview Image is not set here if loaded from history
-
-        const nodes = resultData.nodes || [];
-        const edges = resultData.edges || [];
-
-        let htmlContent = `<h3>1. Tổng quan đỉnh (Nodes)</h3>`;
-        htmlContent += `<p>Hệ thống tìm thấy <b>${nodes.length}</b> đỉnh trong sơ đồ, bao gồm: <b>${nodes.map(n => n.label).join(', ')}</b>.</p>`;
-
-        htmlContent += `<h3>2. Mối liên kết (Edges)</h3>`;
+        let html = `<h3 class="text-lg font-bold mb-2">1. Tổng quan đỉnh (Nodes)</h3>`;
+        html += `<p class="mb-4">Tìm thấy <b>${nodes.length}</b> đỉnh: ${nodes.map(n => `<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold mr-1">${n.label}</span>`).join('')}</p>`;
+        html += `<h3 class="text-lg font-bold mb-2">2. Mối liên kết (Edges)</h3>`;
         if (edges.length === 0) {
-            htmlContent += `<p>Không tìm thấy đường nối nào giữa các đỉnh.</p>`;
+            html += `<p class="text-gray-500 italic">Không tìm thấy đường nối nào.</p>`;
         } else {
-            htmlContent += `<ul>`;
+            html += `<ul class="space-y-2">`;
             edges.forEach(edge => {
-                const weightText = edge.weight ? ` (Trọng số: ${edge.weight})` : '';
-                htmlContent += `<li>Đỉnh <b>${edge.from}</b> nối tới đỉnh <b>${edge.to}</b>${weightText}</li>`;
+                const weight = edge.weight ? `<span class="text-green-600 font-bold ml-2">(Trọng số: ${edge.weight})</span>` : '';
+                html += `<li class="flex items-center"><span class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-sm mr-2">${edge.from}</span> <svg class="w-4 h-4 mx-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg> <span class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-sm ml-2">${edge.to}</span> ${weight}</li>`;
             });
-            htmlContent += `</ul>`;
+            html += `</ul>`;
         }
-        textOutput.innerHTML = htmlContent;
+        textOutput.innerHTML = html;
+
+        try {
+            noResultVisual.classList.add('hidden');
+            mynetwork.classList.remove('hidden');
+            renderInteractiveGraph({ nodes, edges });
+        } catch (err) {
+            noResultVisual.classList.remove('hidden');
+            mynetwork.classList.add('hidden');
+            noResultVisual.innerHTML = `<p>Không thể hiển thị đồ thị trực quan. Bạn vẫn có thể xem Diễn Giải/JSON.</p>`;
+            log(`Lỗi hiển thị trực quan: ${err.message}`, 'error');
+        }
 
         // Render JSON
-        const objForJson = { ...resultData };
-        delete objForJson.logs;
-        jsonOutput.textContent = JSON.stringify(objForJson, null, 2);
+        jsonOutput.textContent = JSON.stringify(data, (key, value) => key === 'logs' ? undefined : value, 2);
 
-        // Render Image
-        visualResultImg.src = imgPath;
-
-        // Render Logs to System Log Interface
-        statusLog.innerHTML = ''; // Reset all previous logs to make view 100% identical
-        if (resultData.logs && resultData.logs.length > 0) {
-            resultData.logs.forEach(logLine => {
-                log(logLine, 'info', true);
-            });
+        // System Logs
+        statusLog.innerHTML = '';
+        if (Array.isArray(resultData.logs)) {
+            resultData.logs.forEach(l => log(l, 'info', true));
         }
 
-        // Disable Process Btn for history view
-        // if (historyId) {
-        //     processBtn.disabled = true;
-        //     processBtn.textContent = "[ Chế Độ Xem Lịch Sử ]";
-        // } else {
-        //     processBtn.textContent = "Chạy Thuật Toán Nhận Diện";
-        // }
-
-        // Show Text Tab by default
-        tabClick(resultTabText, contentText);
         downloadJsonBtn.disabled = false;
-
-        // Share Link Setup
-        if (historyId) {
-            shareBtn.dataset.id = historyId;
+        
+        // Share Button Logic
+        if (historyInfo) {
+            shareBtn.dataset.id = historyInfo.id;
+            shareBtn.dataset.isPublic = historyInfo.is_public;
+            shareBtn.dataset.isOwner = historyInfo.is_owner;
             shareBtn.disabled = false;
+            updateShareBtnUI(historyInfo.is_public, historyInfo.is_owner);
         } else {
             shareBtn.disabled = true;
         }
+
+        switchTab('visual');
     }
 
-    // Tab logic
-    function tabClick(activeTab, activeContent) {
-        [resultTabText, resultTabJson, resultTabVisual].forEach(t => t.classList.remove('active'));
-        [contentText, contentJson, contentVisual].forEach(c => c.classList.remove('active'));
-
-        activeTab.classList.add('active');
-        activeContent.classList.add('active');
+    function updateShareBtnUI(isPublic, isOwner) {
+        if (!isOwner) {
+            shareBtn.innerHTML = `Sao chép Link`;
+            shareBtn.className = "flex-1 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium";
+            return;
+        }
+        
+        if (isPublic) {
+            shareBtn.innerHTML = `Đang Chia sẻ (Hủy)`;
+            shareBtn.className = "flex-1 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors font-medium";
+        } else {
+            shareBtn.innerHTML = `Bấm để Chia sẻ`;
+            shareBtn.className = "flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium";
+        }
     }
 
-    resultTabText.addEventListener('click', () => tabClick(resultTabText, contentText));
-    resultTabJson.addEventListener('click', () => tabClick(resultTabJson, contentJson));
-    resultTabVisual.addEventListener('click', () => tabClick(resultTabVisual, contentVisual));
+    function renderInteractiveGraph(data) {
+        if (!window.vis) {
+            throw new Error('Thiếu thư viện vis-network');
+        }
+        const visNodes = new window.vis.DataSet(data.nodes.map(n => ({
+            id: n.label,
+            label: n.label,
+            color: { background: '#DBEAFE', border: '#2563EB' },
+            font: { color: '#1E40AF', weight: 'bold' }
+        })));
 
-    // Download JSON
+        const visEdges = new window.vis.DataSet(data.edges.map(e => ({
+            from: e.from,
+            to: e.to,
+            label: e.weight ? String(e.weight) : '',
+            arrows: 'to',
+            color: { color: '#94A3B8', highlight: '#2563EB' },
+            font: { align: 'top', color: '#059669', strokeWidth: 0 }
+        })));
+
+        const container = document.getElementById('mynetwork');
+        const visData = { nodes: visNodes, edges: visEdges };
+        const options = {
+            physics: {
+                enabled: true,
+                barnesHut: { gravitationalConstant: -2000, centralGravity: 0.3, springLength: 150 }
+            },
+            interaction: { hover: true }
+        };
+        
+        if (network) network.destroy();
+        network = new window.vis.Network(container, visData, options);
+    }
+
+    function switchTab(tabId) {
+        const tabs = {
+            'visual': { btn: tabVisual, content: contentVisual },
+            'text': { btn: tabText, content: contentText },
+            'json': { btn: tabJson, content: contentJson }
+        };
+
+        Object.keys(tabs).forEach(id => {
+            const isSelected = id === tabId;
+            tabs[id].btn.className = isSelected 
+                ? 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 bg-white'
+                : 'tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+            tabs[id].content.classList.toggle('active', isSelected);
+            tabs[id].content.classList.toggle('hidden', !isSelected);
+        });
+    }
+
+    tabVisual.addEventListener('click', () => switchTab('visual'));
+    tabText.addEventListener('click', () => switchTab('text'));
+    tabJson.addEventListener('click', () => switchTab('json'));
+
     downloadJsonBtn.addEventListener('click', () => {
         if (!resultData) return;
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(resultData, null, 2));
-        const btn = document.createElement('a');
-        btn.href = dataStr;
-        btn.download = (currentFile ? currentFile.name : 'result') + '_graph.json';
-        document.body.appendChild(btn);
-        btn.click();
-        document.body.removeChild(btn);
-        log('Đã tải xuống file JSON.');
+        const blob = new Blob([JSON.stringify(resultData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `graph_${Date.now()}.json`;
+        a.click();
     });
 
-    shareBtn.addEventListener('click', () => {
-        const historyId = shareBtn.dataset.id;
-        if (!historyId) return;
-        const shareUrl = window.location.origin + window.location.pathname + '?view=' + historyId;
-        navigator.clipboard.writeText(shareUrl).then(() => {
-            alert("Đã sao chép Link chia sẻ kết quả vào Clipboard!");
-        }).catch(err => {
-            prompt("Link chia sẻ của bạn:", shareUrl);
-        });
-    });
+    shareBtn.addEventListener('click', async () => {
+        const id = shareBtn.dataset.id;
+        const isPublic = shareBtn.dataset.isPublic === 'true';
+        const isOwner = shareBtn.dataset.isOwner === 'true';
+        const token = localStorage.getItem('token');
 
-    // History Redirect
-    btnHistory.addEventListener('click', () => {
-        window.location.href = '/history';
-    });
-
-    // Share Init
-    async function loadShared() {
-        const params = new URLSearchParams(window.location.search);
-        const shareId = params.get('view');
-        if (shareId) {
-            log('Đang tải dữ liệu chia sẻ...');
+        if (isOwner && token) {
             try {
-                const res = await fetch('/api/v1/history/shared/' + shareId);
+                const res = await fetch(`/api/v1/history/${id}/toggle-share`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail);
-
-                const item = data.data;
-                const jsonRes = await fetch('/' + item.result_json_path);
-                const jsonData = await jsonRes.json();
-
-                document.getElementById('upload-area').style.display = 'none';
-                previewContainer.style.display = 'flex';
-                previewImg.src = '/' + item.original_path;
-
-                renderResult(jsonData, '/' + item.result_image_path, item.id);
-                log(`Đã nạp báo cáo dữ liệu chia sẻ: ${item.filename}`, 'success');
+                
+                shareBtn.dataset.isPublic = data.is_public;
+                updateShareBtnUI(data.is_public, true);
+                
+                if (data.is_public) {
+                    const url = `${window.location.origin}${window.location.pathname}?view=${id}`;
+                    navigator.clipboard.writeText(url).then(() => alert('Đã công khai và sao chép link chia sẻ!'));
+                } else {
+                    alert('Đã hủy chia sẻ. Chỉ bạn mới có thể xem kết quả này.');
+                }
             } catch (err) {
-                log(`Lỗi tải báo cáo chia sẻ: ${err.message}`, 'error');
+                alert('Lỗi: ' + err.message);
+            }
+        } else {
+            const url = `${window.location.origin}${window.location.pathname}?view=${id}`;
+            navigator.clipboard.writeText(url).then(() => alert('Đã sao chép link chia sẻ!'));
+        }
+    });
+
+    btnHistory.addEventListener('click', () => { window.location.href = '/history'; });
+
+    // Load shared view
+    async function loadShared() {
+        const params = new URLSearchParams(window.location.search);
+        const viewId = params.get('view');
+        if (viewId) {
+            log('Đang tải kết quả...');
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            
+            try {
+                const res = await fetch(`/api/v1/history/shared/${viewId}`, { headers });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    if (res.status === 403) {
+                        log('Bạn không có quyền xem kết quả này. Vui lòng đăng nhập hoặc yêu cầu chủ sở hữu chia sẻ.', 'error');
+                        alert(data.detail);
+                    } else if (res.status === 404) {
+                        log('Không tìm thấy kết quả (ID có thể đã bị xóa hoặc không tồn tại).', 'error');
+                        alert('Kết quả phân tích này không tồn tại hoặc đã bị xóa.');
+                    } else {
+                        throw new Error(data.detail || 'Lỗi không xác định');
+                    }
+                    return;
+                }
+
+                renderResult(data.data, '/' + data.history.result_image_path, {
+                    id: data.history.id,
+                    is_public: data.history.is_public,
+                    is_owner: data.history.is_owner
+                });
+                previewImg.src = '/' + data.history.original_path;
+                uploadArea.classList.add('hidden');
+                previewContainer.classList.remove('hidden');
+                log('Đã tải kết quả thành công.', 'success');
+            } catch (err) {
+                log(err.message, 'error');
             }
         }
     }
 
-    // Init
     checkAuth();
     loadShared();
     log('Hệ thống sẵn sàng.');

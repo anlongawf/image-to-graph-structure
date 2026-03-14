@@ -4,18 +4,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userGreeting = document.getElementById('user-greeting');
     const btnLogout = document.getElementById('btn-logout');
 
-    // Check Auth
     const token = localStorage.getItem('token');
     if (!token) {
         errorMsg.textContent = "Bạn cần Đăng nhập ở Trang chủ để xem lịch sử.";
-        listContainer.innerHTML = '';
-        userGreeting.style.display = 'none';
-        btnLogout.style.display = 'none';
+        errorMsg.classList.remove('hidden');
+        listContainer.innerHTML = '<li class="p-12 text-center text-gray-500 italic">Vui lòng đăng nhập...</li>';
         return;
     }
 
-    const payloadDecoded = JSON.parse(atob(token.split('.')[1]));
-    userGreeting.textContent = `User ID: ${payloadDecoded.sub}`;
+    // Check Auth and get user info
+    try {
+        const res = await fetch('/api/v1/auth/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Token expired');
+        const user = await res.json();
+        userGreeting.textContent = `Chào, ${user.email.split('@')[0]}`;
+    } catch (err) {
+        localStorage.removeItem('token');
+        window.location.href = '/';
+        return;
+    }
 
     btnLogout.addEventListener('click', () => {
         localStorage.removeItem('token');
@@ -27,39 +36,58 @@ document.addEventListener('DOMContentLoaded', async () => {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Không thể tải dữ liệu.");
 
         listContainer.innerHTML = '';
-        if (!res.ok) throw new Error(data.detail || "Không thể tải dữ liệu tự điển.");
-
         if (data.data.length === 0) {
-            listContainer.innerHTML = '<li style="text-align:center; padding: 30px;">Bạn chưa thực hiện phân tích đồ thị nào.</li>';
+            listContainer.innerHTML = '<li class="p-12 text-center text-gray-500 italic">Bạn chưa thực hiện phân tích đồ thị nào.</li>';
         } else {
             data.data.forEach(item => {
                 const li = document.createElement('li');
-                li.className = 'history-item';
+                li.className = 'p-6 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-6';
+                
+                const date = new Date(item.created_at).toLocaleString('vi-VN');
+                const statusColor = item.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+                const shareBadge = item.is_public ? '<span class="ml-2 px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-700 font-bold uppercase border border-blue-200">Đã chia sẻ</span>' : '';
+                
                 li.innerHTML = `
-                    <div class="history-imgs">
-                        <div>
-                            <div style="font-size: 0.7rem; color: #666; text-align: center; margin-bottom: 4px;">ẢNH GỐC</div>
-                            <img src="/${item.original_path}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc;" title="Ảnh Gốc">
+                    <div class="flex items-center space-x-6">
+                        <div class="flex-shrink-0 relative">
+                            <img src="/${item.result_image_path}" class="w-20 h-20 object-contain rounded-lg border border-gray-200 bg-gray-50 shadow-sm" alt="Preview">
+                            <span class="absolute -top-2 -right-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusColor} border border-white">
+                                ${item.status}
+                            </span>
                         </div>
-                        <span style="font-size: 1.5rem; color: #888;">➡</span>
                         <div>
-                            <div style="font-size: 0.7rem; color: #007bff; text-align: center; margin-bottom: 4px;">ẢNH KẾT QUẢ</div>
-                            <img src="/${item.result_image_path}" style="width: 70px; height: 70px; object-fit: contain; border-radius: 4px; border: 1px solid #007bff; background: white;" title="Ảnh Kết Quả">
+                            <div class="flex items-center">
+                                <h3 class="text-lg font-bold text-gray-900 leading-tight">${item.filename.split('_').slice(1).join('_')}</h3>
+                                ${shareBadge}
+                            </div>
+                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mt-1">
+                                <span class="flex items-center">
+                                    <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    ${date}
+                                </span>
+                                <span class="flex items-center">
+                                    <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    ${item.execution_time_ms ? item.execution_time_ms.toFixed(0) : 0}ms
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    <div style="flex: 1; margin-left: 20px;">
-                        <b style="color: #333; font-size: 1.1rem;">${item.filename}</b> <br> 
-                        <small style="color: #666; display: inline-block; margin-top: 5px;">${new Date(item.created_at).toLocaleString()} &nbsp;|&nbsp; ${item.execution_time_ms}ms</small>
+                    <div class="flex items-center space-x-3">
+                        <a href="/?view=${item.id}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                            Xem chi tiết
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
+                        </a>
                     </div>
-                    <a href="/?view=${item.id}" class="control-btn" style="text-decoration: none; padding: 10px 15px; display: inline-block; text-align: center;">Mở Lại 100%</a>
                 `;
                 listContainer.appendChild(li);
             });
         }
     } catch (err) {
         errorMsg.textContent = `Lỗi hệ thống: ${err.message}`;
+        errorMsg.classList.remove('hidden');
         listContainer.innerHTML = '';
     }
 });
